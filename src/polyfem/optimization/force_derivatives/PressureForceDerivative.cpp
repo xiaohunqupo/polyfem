@@ -3,6 +3,7 @@
 #include <cassert>
 #include <Eigen/Core>
 #include <polyfem/solver/forms/PressureForm.hpp>
+#include <polyfem/utils/Types.hpp>
 
 namespace polyfem::solver
 {

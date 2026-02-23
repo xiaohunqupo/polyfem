@@ -4,15 +4,16 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <polyfem/assembler/AssemblerUtils.hpp>
-#include <polyfem/basis/ElementBases.hpp>
+#include <polyfem/assembler/AssemblyValues.hpp>
+#include <polyfem/assembler/ElementAssemblyValues.hpp>
 #include <polyfem/io/Evaluator.hpp>
 #include <polyfem/optimization/AdjointTools.hpp>
+#include <polyfem/quadrature/Quadrature.hpp>
 #include <polyfem/solver/forms/BodyForm.hpp>
-#include <Eigen/Core>
 #include <polyfem/utils/BoundarySampler.hpp>
 #include <polyfem/utils/Logger.hpp>
 #include <polyfem/utils/MaybeParallelFor.hpp>
+#include <polyfem/utils/Types.hpp>
 
 namespace polyfem::solver
 {

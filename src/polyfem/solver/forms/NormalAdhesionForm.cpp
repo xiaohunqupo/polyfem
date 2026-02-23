@@ -1,19 +1,16 @@
 #include "NormalAdhesionForm.hpp"
 
-#include <polyfem/solver/NLProblem.hpp>
-#include <polyfem/solver/forms/FrictionForm.hpp>
-#include <polyfem/utils/Types.hpp>
-#include <polyfem/utils/Timer.hpp>
-#include <polyfem/utils/Logger.hpp>
 #include <polyfem/utils/MatrixUtils.hpp>
 #include <polyfem/utils/MaybeParallelFor.hpp>
+#include <polyfem/utils/Timer.hpp>
+#include <polyfem/utils/Types.hpp>
 
-#include <polyfem/io/OBJWriter.hpp>
+#include <ipc/broad_phase/create_broad_phase.hpp>
+#include <ipc/potentials/potential.hpp>
 
-#include <ipc/barrier/adaptive_stiffness.hpp>
-#include <ipc/utils/world_bbox_diagonal_length.hpp>
-
-#include <igl/writePLY.h>
+#include <algorithm>
+#include <cassert>
+#include <cmath>
 
 namespace polyfem::solver
 {

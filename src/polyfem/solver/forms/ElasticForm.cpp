@@ -5,7 +5,16 @@
 #include <polyfem/assembler/AssemblerUtils.hpp>
 #include <polyfem/basis/ElementBases.hpp>
 #include <polyfem/assembler/MatParams.hpp>
+#include <polyfem/utils/Logger.hpp>
 #include <polyfem/utils/Timer.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <memory>
+#include <stdexcept>
+#include <tuple>
+#include <vector>
 
 using namespace polyfem::assembler;
 using namespace polyfem::utils;

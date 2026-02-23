@@ -1,13 +1,16 @@
 #include "BarrierContactForm.hpp"
-#include <ipc/potentials/barrier_potential.hpp>
+
 #include <polyfem/utils/Logger.hpp>
-#include <polyfem/utils/Types.hpp>
-#include <polyfem/utils/Timer.hpp>
-#include <polyfem/utils/MatrixUtils.hpp>
 #include <polyfem/utils/MaybeParallelFor.hpp>
+#include <polyfem/utils/Timer.hpp>
+#include <polyfem/utils/Types.hpp>
 
 #include <ipc/barrier/adaptive_stiffness.hpp>
 #include <ipc/utils/world_bbox_diagonal_length.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
 
 namespace polyfem::solver
 {

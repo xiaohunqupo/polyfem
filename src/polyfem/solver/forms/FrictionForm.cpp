@@ -5,6 +5,17 @@
 #include <polyfem/utils/Timer.hpp>
 #include <polyfem/utils/MatrixUtils.hpp>
 
+#include <ipc/broad_phase/create_broad_phase.hpp>
+#include <ipc/collisions/normal/normal_collisions.hpp>
+#include <ipc/smooth_contact/smooth_collisions.hpp>
+
+#include <Eigen/Core>
+
+#include <cassert>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+
 namespace polyfem::solver
 {
 	FrictionForm::FrictionForm(

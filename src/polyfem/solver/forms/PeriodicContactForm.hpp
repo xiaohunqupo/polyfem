@@ -2,6 +2,10 @@
 
 #include "BarrierContactForm.hpp"
 
+#include <Eigen/Core>
+#include <polyfem/utils/Types.hpp>
+#include <polysolve/nonlinear/PostStepData.hpp>
+
 namespace polyfem::solver
 {
   class PeriodicContactForceDerivative;

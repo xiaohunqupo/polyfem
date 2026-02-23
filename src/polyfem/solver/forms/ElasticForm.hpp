@@ -7,7 +7,11 @@
 #include <polyfem/assembler/AssemblyValsCache.hpp>
 
 #include <polyfem/utils/Jacobian.hpp>
+#include <polyfem/utils/MatrixCache.hpp>
 #include <polyfem/utils/Types.hpp>
+
+#include <memory>
+#include <vector>
 
 namespace polyfem::solver
 {

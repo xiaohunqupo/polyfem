@@ -12,6 +12,8 @@
 #include <ipc/potentials/friction_potential.hpp>
 #include <ipc/broad_phase/create_broad_phase.hpp>
 
+#include <memory>
+
 namespace polyfem::solver
 {
 	/// @brief Form of the lagged friction disapative potential and forces

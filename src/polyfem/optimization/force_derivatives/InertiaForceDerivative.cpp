@@ -4,9 +4,11 @@
 #include <Eigen/Core>
 #include <polyfem/solver/forms/InertiaForm.hpp>
 #include <polyfem/assembler/AssemblyValsCache.hpp>
+#include <polyfem/assembler/ElementAssemblyValues.hpp>
 #include <polyfem/assembler/Mass.hpp>
 #include <polyfem/basis/ElementBases.hpp>
 #include <polyfem/io/Evaluator.hpp>
+#include <polyfem/quadrature/Quadrature.hpp>
 #include <polyfem/utils/MaybeParallelFor.hpp>
 #include <polyfem/utils/Types.hpp>
 

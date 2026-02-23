@@ -1,6 +1,7 @@
 #include "PressureForm.hpp"
 
-#include <polyfem/utils/Logger.hpp>
+#include <unordered_map>
+#include <vector>
 
 namespace polyfem::solver
 {

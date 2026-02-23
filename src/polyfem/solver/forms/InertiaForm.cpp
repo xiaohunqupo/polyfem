@@ -1,6 +1,9 @@
 #include "InertiaForm.hpp"
 
 #include <polyfem/time_integrator/ImplicitTimeIntegrator.hpp>
+#include <polyfem/utils/Types.hpp>
+
+#include <cassert>
 
 namespace polyfem::solver
 {

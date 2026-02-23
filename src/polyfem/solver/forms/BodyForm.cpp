@@ -1,6 +1,6 @@
 #include "BodyForm.hpp"
 
-#include <polyfem/utils/Logger.hpp>
+#include <vector>
 
 namespace polyfem::solver
 {

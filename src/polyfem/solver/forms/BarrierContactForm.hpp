@@ -3,6 +3,7 @@
 #include "ContactForm.hpp"
 
 #include <polyfem/utils/Types.hpp>
+#include <polysolve/nonlinear/PostStepData.hpp>
 
 #include <ipc/collisions/normal/normal_collisions.hpp>
 #include <ipc/potentials/barrier_potential.hpp>

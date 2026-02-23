@@ -8,6 +8,9 @@
 
 #include <polyfem/utils/Types.hpp>
 
+#include <unordered_map>
+#include <vector>
+
 namespace polyfem::solver
 {
 	/// @brief Form representing body forces

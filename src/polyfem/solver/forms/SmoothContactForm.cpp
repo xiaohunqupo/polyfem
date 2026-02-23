@@ -1,14 +1,13 @@
 #include "SmoothContactForm.hpp"
+
 #include <polyfem/utils/Logger.hpp>
 #include <polyfem/utils/Types.hpp>
 #include <polyfem/utils/Timer.hpp>
-#include <polyfem/utils/MatrixUtils.hpp>
-#include <polyfem/utils/MaybeParallelFor.hpp>
-#include <polyfem/io/OBJWriter.hpp>
 
-#include <ipc/utils/eigen_ext.hpp>
 #include <ipc/barrier/adaptive_stiffness.hpp>
 #include <ipc/utils/world_bbox_diagonal_length.hpp>
+
+#include <cmath>
 
 namespace polyfem::solver
 {

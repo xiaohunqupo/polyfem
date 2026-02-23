@@ -1,16 +1,19 @@
 #pragma once
 
 #include "Form.hpp"
-#include "ContactForm.hpp"
 
-#include <polyfem/Common.hpp>
 #include <polyfem/utils/Types.hpp>
+#include <polysolve/nonlinear/PostStepData.hpp>
 
+#include <ipc/broad_phase/broad_phase.hpp>
+#include <ipc/broad_phase/create_broad_phase.hpp>
+#include <ipc/candidates/candidates.hpp>
+#include <ipc/ccd/tight_inclusion_ccd.hpp>
 #include <ipc/collisions/normal/normal_collisions.hpp>
 #include <ipc/collision_mesh.hpp>
-#include <ipc/broad_phase/broad_phase.hpp>
 #include <ipc/potentials/normal_adhesion_potential.hpp>
 
+#include <memory>
 
 namespace polyfem::solver
 {

@@ -1,9 +1,13 @@
 #include "PeriodicContactForm.hpp"
 
-#include <polyfem/utils/MatrixUtils.hpp>
-#include <polyfem/io/OBJWriter.hpp>
+#include <polyfem/utils/Types.hpp>
+#include <polysolve/nonlinear/PostStepData.hpp>
 
-#include <iostream>
+#include <Eigen/Core>
+#include <Eigen/SparseCore>
+
+#include <cassert>
+#include <vector>
 
 namespace polyfem::solver
 {

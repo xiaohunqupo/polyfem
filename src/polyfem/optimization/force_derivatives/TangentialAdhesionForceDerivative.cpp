@@ -2,7 +2,6 @@
 
 #include <Eigen/Core>
 #include <polyfem/solver/forms/TangentialAdhesionForm.hpp>
-#include <polyfem/solver/forms/NormalAdhesionForm.hpp>
 #include <polyfem/utils/MatrixUtils.hpp>
 #include <polyfem/utils/Types.hpp>
 #include <ipc/collisions/tangential/tangential_collisions.hpp>

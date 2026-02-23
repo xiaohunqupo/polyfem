@@ -2,11 +2,10 @@
 
 #include "Form.hpp"
 
-#include <polyfem/assembler/AssemblyValsCache.hpp>
-#include <polyfem/assembler/Mass.hpp>
-#include <polyfem/basis/ElementBases.hpp>
 #include <polyfem/utils/Types.hpp>
 #include <polyfem/time_integrator/ImplicitTimeIntegrator.hpp>
+
+#include <Eigen/Core>
 
 namespace polyfem::solver
 {

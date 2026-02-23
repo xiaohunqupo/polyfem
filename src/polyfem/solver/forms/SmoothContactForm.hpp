@@ -3,10 +3,10 @@
 #include "ContactForm.hpp"
 
 #include <polyfem/utils/Types.hpp>
+#include <polysolve/nonlinear/PostStepData.hpp>
 
 #include <ipc/smooth_contact/smooth_collisions.hpp>
 #include <ipc/smooth_contact/smooth_contact_potential.hpp>
-#include <cmath>
 
 namespace polyfem::solver
 {

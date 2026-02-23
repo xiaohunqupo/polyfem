@@ -8,6 +8,8 @@
 
 #include <polyfem/utils/Types.hpp>
 
+#include <vector>
+
 namespace polyfem::solver
 {
 	/// @brief Form representing body forces

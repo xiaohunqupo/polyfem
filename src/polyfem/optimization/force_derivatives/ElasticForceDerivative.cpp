@@ -1,14 +1,15 @@
 #include "ElasticForceDerivative.hpp"
 
-#include <polyfem/solver/forms/ElasticForm.hpp>
 #include <Eigen/Core>
-
-#include <polyfem/assembler/AssemblerUtils.hpp>
+#include <polyfem/solver/forms/ElasticForm.hpp>
+#include <polyfem/assembler/ElementAssemblyValues.hpp>
 #include <polyfem/assembler/MatParams.hpp>
 #include <polyfem/assembler/ViscousDamping.hpp>
 #include <polyfem/io/Evaluator.hpp>
+#include <polyfem/quadrature/Quadrature.hpp>
 #include <polyfem/utils/MatrixUtils.hpp>
 #include <polyfem/utils/MaybeParallelFor.hpp>
+#include <polyfem/utils/Types.hpp>
 
 using namespace polyfem::assembler;
 
