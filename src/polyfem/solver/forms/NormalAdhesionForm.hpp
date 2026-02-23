@@ -17,6 +17,8 @@ namespace polyfem::solver
 	/// @brief Form representing the contact potential and forces
 	class NormalAdhesionForm : public Form
 	{
+		friend class NormalAdhesionForceDerivative;
+
 	public:
 		/// @brief Construct a new NormalAdhesion Form object
 		/// @param collision_mesh Reference to the collision mesh
@@ -44,8 +46,6 @@ namespace polyfem::solver
 		/// @brief Initialize the form
 		/// @param x Current solution
 		void init(const Eigen::VectorXd &x) override;
-
-		virtual void force_shape_derivative(const ipc::NormalCollisions &collision_set, const Eigen::MatrixXd &solution, const Eigen::VectorXd &adjoint_sol, Eigen::VectorXd &term);
 
 	protected:
 		/// @brief Compute the normal adhesion potential value

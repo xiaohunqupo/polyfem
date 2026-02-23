@@ -43,12 +43,6 @@ namespace polyfem::solver
 		log_and_throw_error("Adaptive barrier stiffness not implemented for SmoothContactForm!");
 	}
 
-	void SmoothContactForm::force_shape_derivative(const ipc::SmoothCollisions &collision_set, const Eigen::MatrixXd &solution, const Eigen::VectorXd &adjoint_sol, Eigen::VectorXd &term) const
-	{
-		StiffnessMatrix hessian = barrier_potential_.hessian(collision_set, collision_mesh_, compute_displaced_surface(solution), ipc::PSDProjectionMethod::NONE);
-		term = barrier_stiffness() * collision_mesh_.to_full_dof(hessian) * adjoint_sol;
-	}
-
 	void SmoothContactForm::update_collision_set(const Eigen::MatrixXd &displaced_surface)
 	{
 		// Store the previous value used to compute the constraint set to avoid duplicate computation.

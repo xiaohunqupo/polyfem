@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Form.hpp"
+#include "ContactForm.hpp"
 
 #include <polyfem/time_integrator/ImplicitTimeIntegrator.hpp>
 #include <polyfem/utils/Types.hpp>
@@ -13,10 +14,11 @@
 
 namespace polyfem::solver
 {
-	class ContactForm;
 	/// @brief Form of the lagged friction disapative potential and forces
 	class FrictionForm : public Form
 	{
+		friend class FrictionForceDerivative;
+
 	public:
 		/// @brief Construct a new Friction Form object
 		/// @param collision_mesh Reference to the collision mesh
@@ -37,8 +39,6 @@ namespace polyfem::solver
 			const int n_lagging_iters);
 
 		std::string name() const override { return "friction"; }
-
-		void force_shape_derivative(const Eigen::MatrixXd &prev_solution, const Eigen::MatrixXd &solution, const Eigen::MatrixXd &adjoint, const ipc::TangentialCollisions &friction_constraints_set, Eigen::VectorXd &term);
 
 	protected:
 		/// @brief Compute the value of the form
