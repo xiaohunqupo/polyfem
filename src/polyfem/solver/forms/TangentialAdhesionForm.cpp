@@ -60,14 +60,11 @@ namespace polyfem::solver
 	{
 		POLYFEM_SCOPED_TIMER("tangential adhesion hessian");
 
-		ipc::PSDProjectionMethod psd_projection_method;
+		ipc::PSDProjectionMethod psd_projection_method; 
 
-		if (project_to_psd_)
-		{
+		if (project_to_psd_) {
 			psd_projection_method = ipc::PSDProjectionMethod::CLAMP;
-		}
-		else
-		{
+		} else {
 			psd_projection_method = ipc::PSDProjectionMethod::NONE;
 		}
 
