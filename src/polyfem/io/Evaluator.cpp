@@ -237,7 +237,7 @@ namespace polyfem::io
 
 			assembler.compute_scalar_value(OutputData(t, i, bs, gbs, local_pts, fun), tmp_s);
 			assembler.compute_tensor_value(OutputData(t, i, bs, gbs, local_pts, fun), tmp_t);
-			
+
 			for (size_t j = 0; j < bs.bases.size(); ++j)
 			{
 				const Basis &b = bs.bases[j];
@@ -257,7 +257,7 @@ namespace polyfem::io
 					m.setZero();
 				}
 			}
-			
+
 			if (avg_tensor.empty())
 			{
 				avg_tensor.resize(tmp_t.size());
@@ -311,7 +311,7 @@ namespace polyfem::io
 				m.row(i).array() /= areas(i);
 			}
 		}
-		
+
 		result_scalar.resize(tmp_s.size());
 		for (int k = 0; k < tmp_s.size(); ++k)
 		{
@@ -320,12 +320,11 @@ namespace polyfem::io
 								 avg_scalar[k], result_scalar[k].second, use_sampler, boundary_only);
 		}
 
-		
 		result_tensor.resize(tmp_t.size());
 		for (int k = 0; k < tmp_t.size(); ++k)
 		{
 			result_tensor[k].first = tmp_t[k].first;
-			interpolate_function(mesh, actual_dim*actual_dim, bases, disc_orders, disc_ordersq, polys, polys_3d, sampler, n_points,
+			interpolate_function(mesh, actual_dim * actual_dim, bases, disc_orders, disc_ordersq, polys, polys_3d, sampler, n_points,
 								 utils::flatten(avg_tensor[k]), result_tensor[k].second, use_sampler, boundary_only);
 		}
 	}
