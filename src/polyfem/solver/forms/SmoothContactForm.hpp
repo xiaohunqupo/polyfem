@@ -10,11 +10,11 @@
 
 namespace polyfem::solver
 {
-    class SmoothContactForm : public ContactForm
-    {
+	class SmoothContactForm : public ContactForm
+	{
 		friend class SmoothContactForceDerivative;
 
-    public:
+	public:
 		SmoothContactForm(const ipc::CollisionMesh &collision_mesh,
 						  const double dhat,
 						  const double avg_mass,

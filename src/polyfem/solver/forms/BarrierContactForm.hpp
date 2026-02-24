@@ -10,11 +10,11 @@
 
 namespace polyfem::solver
 {
-    class BarrierContactForm : public ContactForm
-    {
+	class BarrierContactForm : public ContactForm
+	{
 		friend class BarrierContactForceDerivative;
 
-    public:
+	public:
 		BarrierContactForm(const ipc::CollisionMesh &collision_mesh,
 						   const double dhat,
 						   const double avg_mass,
@@ -47,7 +47,7 @@ namespace polyfem::solver
 
 		/// @brief Get use_physical_barrier
 		bool use_physical_barrier() const { return barrier_potential_.use_physical_barrier(); }
-		
+
 		const ipc::NormalCollisions &collision_set() const { return collision_set_; }
 		const ipc::BarrierPotential &barrier_potential() const { return barrier_potential_; }
 

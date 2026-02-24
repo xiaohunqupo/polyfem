@@ -31,7 +31,7 @@ namespace polyfem::solver
 		collision_set_.set_use_area_weighting(use_area_weighting);
 		collision_set_.set_use_improved_max_approximator(use_improved_max_operator);
 		collision_set_.set_enable_shape_derivatives(enable_shape_derivatives);
-    }
+	}
 
 	void BarrierContactForm::update_barrier_stiffness(const Eigen::VectorXd &x, const Eigen::MatrixXd &grad_energy)
 	{

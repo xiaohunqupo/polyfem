@@ -8,15 +8,15 @@
 
 namespace polyfem::solver
 {
-  class PeriodicContactForceDerivative;
+	class PeriodicContactForceDerivative;
 
 	/// @brief Form representing the contact potential and forces on a periodic mesh
 	/// This form has a different input format of [fluctuation, affine], only can be used in NLHomoProblem
-    class PeriodicContactForm : public BarrierContactForm
-    {
-    friend class PeriodicContactForceDerivative;
+	class PeriodicContactForm : public BarrierContactForm
+	{
+		friend class PeriodicContactForceDerivative;
 
-    public:
+	public:
 		/// @brief Construct a new Contact Form object
 		/// @param periodic_collision_mesh 3x3 tiling of a periodic mesh
 		/// @param tiled_to_single Index mapping from the tiled mesh to the original periodic mesh
@@ -36,8 +36,8 @@ namespace polyfem::solver
 
 		void init(const Eigen::VectorXd &x) override;
 
-        Eigen::VectorXd single_to_tiled(const Eigen::VectorXd &x) const;
-        Eigen::VectorXd tiled_to_single_grad(const Eigen::VectorXd &grad) const;
+		Eigen::VectorXd single_to_tiled(const Eigen::VectorXd &x) const;
+		Eigen::VectorXd tiled_to_single_grad(const Eigen::VectorXd &grad) const;
 
 	protected:
 		/// @brief Compute the contact barrier potential value
