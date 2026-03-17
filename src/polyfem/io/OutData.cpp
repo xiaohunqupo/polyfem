@@ -1066,23 +1066,23 @@ namespace polyfem::io
 		{
 			if (!mesh.is_volume())
 			{
-				if (elements[i].vertices.size()==1)
+				if (elements[i].vertices.size() == 1)
 					elements[i].ctype = CellType::Vertex;
-				else if (elements[i].vertices.size()==2)
+				else if (elements[i].vertices.size() == 2)
 					elements[i].ctype = CellType::Line;		
 				else if (mesh.is_simplex(i))
 					elements[i].ctype = CellType::Triangle;
 				else if (mesh.is_cube(i))
-					elements[i].ctype = CellType::Quadrilateral;			
-				else 
+					elements[i].ctype = CellType::Quadrilateral;
+				else
 					elements[i].ctype = CellType::Polygon;
 	}
 			else
 			{
 				if (mesh.is_simplex(i))
-					elements[i].ctype = CellType::Tetrahedron;		
+					elements[i].ctype = CellType::Tetrahedron;
 				else if (mesh.is_cube(i))
-					elements[i].ctype = CellType::Hexahedron;		
+					elements[i].ctype = CellType::Hexahedron;
 				else if (mesh.is_prism(i))
 					elements[i].ctype = CellType::Wedge;
 			}
@@ -2332,7 +2332,7 @@ namespace polyfem::io
 			export_surface.substr(0, export_surface.length() - 4) + "_contact.vtu",
 			collision_mesh.rest_positions(),
 			problem_dim == 3 ? collision_mesh.faces() : collision_mesh.edges(),
-			problem_dim == 3 ? CellType::Triangle: CellType::Line);
+			problem_dim == 3 ? CellType::Triangle : CellType::Line);
 	}
 
 	void OutGeometryData::save_wire(
