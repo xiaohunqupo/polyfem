@@ -1601,7 +1601,7 @@ namespace polyfem::io
 				writer.add_field("error", err);
 		}
 
-		if (fun.cols() != 1)
+		if (fun.cols() != 1 && (opts.scalar_values || opts.tensor_values || (!opts.use_spline && (opts.scalar_values || opts.tensor_values))))
 		{
 			std::vector<assembler::Assembler::NamedMatrix> vals, tvals;
 			Evaluator::compute_scalar_value(
@@ -1651,7 +1651,7 @@ namespace polyfem::io
 				}
 			}
 
-			if (!opts.use_spline)
+			if (!opts.use_spline && (opts.scalar_values || opts.tensor_values))
 			{
 				Evaluator::average_grad_based_function(
 					mesh, problem.is_scalar(), state.n_bases, bases, gbases,
@@ -1674,6 +1674,27 @@ namespace polyfem::io
 					{
 						if (opts.export_field(fmt::format("{:s}_avg", v.first)))
 							writer.add_field(fmt::format("{:s}_avg", v.first), v.second);
+					}
+				}
+				if (opts.tensor_values)
+				{
+					for (const auto &v : tvals)
+					{
+						const int stride = mesh.dimension();
+						assert(v.second.cols() % stride == 0);
+
+						if (!opts.export_field(fmt::format("{:s}_avg", v.first)))
+							continue;
+
+						for (int i = 0; i < v.second.cols(); i += stride)
+						{
+							const Eigen::MatrixXd tmp = v.second.middleCols(i, stride);
+							assert(tmp.cols() == stride);
+
+							const int ii = (i / stride) + 1;
+							writer.add_field(
+								fmt::format("{:s}_avg_{:d}", v.first, ii), tmp);
+						}
 					}
 				}
 			}
@@ -2198,7 +2219,7 @@ namespace polyfem::io
 
 		collision_set.build(
 			collision_mesh, displaced_surface, dhat,
-			/*dmin=*/0, ipc::build_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]));
+			/*dmin=*/0, ipc::create_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]));
 
 		ipc::BarrierPotential barrier_potential(dhat);
 		if (state.args["contact"]["use_convergent_formulation"])
@@ -2281,7 +2302,7 @@ namespace polyfem::io
 		ipc::NormalCollisions adhesion_collision_set;
 		adhesion_collision_set.build(
 			collision_mesh, displaced_surface, dhat_a,
-			/*dmin=*/0, ipc::build_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]));
+			/*dmin=*/0, ipc::create_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]));
 
 		ipc::NormalAdhesionPotential normal_adhesion_potential(dhat_p, dhat_a, Y, 1);
 
