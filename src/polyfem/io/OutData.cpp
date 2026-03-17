@@ -1069,14 +1069,14 @@ namespace polyfem::io
 				if (elements[i].vertices.size() == 1)
 					elements[i].ctype = CellType::Vertex;
 				else if (elements[i].vertices.size() == 2)
-					elements[i].ctype = CellType::Line;		
+					elements[i].ctype = CellType::Line;
 				else if (mesh.is_simplex(i))
 					elements[i].ctype = CellType::Triangle;
 				else if (mesh.is_cube(i))
 					elements[i].ctype = CellType::Quadrilateral;
 				else
 					elements[i].ctype = CellType::Polygon;
-	}
+			}
 			else
 			{
 				if (mesh.is_simplex(i))
