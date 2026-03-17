@@ -334,6 +334,14 @@ namespace polyfem
 
 		/// timedependent stuff cached
 		solver::SolveData solve_data;
+
+		/// @brief Linear solver instance from the most recent static linear solve.
+		///
+		/// This cache is meant for library user to resue the factorization. Polyfem
+		/// core itself does not rely on this cache. For example, adjoint optimization
+		/// benefits from this as they sometime solve the same lhs.
+		std::unique_ptr<polysolve::linear::Solver> static_linear_solver_cache;
+
 		/// initialize solver
 		/// @param[out] sol solution
 		/// @param[out] pressure pressure
@@ -681,7 +689,6 @@ namespace polyfem
 		//---------------------------------------------------
 	public:
 		solver::CacheLevel optimization_enabled = solver::CacheLevel::None;
-		std::unique_ptr<polysolve::linear::Solver> lin_solver_cached; // matrix factorization of last linear solve
 
 		int ndof() const
 		{
@@ -726,8 +733,6 @@ namespace polyfem
 
 		// to replace the initial condition in json during initial condition optimization
 		Eigen::MatrixXd initial_sol_update, initial_vel_update;
-		// mapping from positions of FE basis nodes to positions of geometry nodes
-		StiffnessMatrix basis_nodes_to_gbasis_nodes;
 
 		//---------------------------------------------------
 		//-----------------homogenization--------------------
