@@ -537,7 +537,7 @@ namespace polyfem::mesh
 			int loc_index = 0;
 			for (int k = 1; k < n_new_nodes; ++k)
 			{
-				const int grid = (k == 1) ? 1 : k;   // 1 node for k=1, k×k for k>1
+				const int grid = (k == 1) ? 1 : k; // 1 node for k=1, k×k for k>1
 				for (int i = 1; i <= grid; ++i)
 				{
 					for (int j = 1; j <= grid; ++j)

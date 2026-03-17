@@ -703,15 +703,15 @@ namespace
 		}
 
 		// 8 edges × (p-1) interior nodes each
-		const int n_edge_nodes    = 8 * (p - 1);
+		const int n_edge_nodes = 8 * (p - 1);
 		// 4 tri faces × (p-1)(p-2)/2 interior nodes each
 		const int n_tri_face_nodes = 4 * (p - 1) * (p - 2) / 2;
 		// 1 quad base face × (p-1)^2 interior nodes
 		const int n_quad_face_nodes = (p - 1) * (p - 1);
-		const int n_face_nodes    = n_tri_face_nodes + n_quad_face_nodes;
+		const int n_face_nodes = n_tri_face_nodes + n_quad_face_nodes;
 		// total pyramid space dim = (p+1)(p+2)(2p+3)/6
-		const int total           = (p + 1) * (p + 2) * (2 * p + 3) / 6;
-		const int n_cell_nodes    = (p - 1) * (p - 2) * (2 * p - 3) / 6;
+		const int total = (p + 1) * (p + 2) * (2 * p + 3) / 6;
+		const int n_cell_nodes = (p - 1) * (p - 2) * (2 * p - 3) / 6;
 
 		assert(total == 5 + n_edge_nodes + n_face_nodes + n_cell_nodes);
 
@@ -2255,17 +2255,17 @@ Eigen::VectorXi LagrangeBasis3d::pyramid_face_local_nodes(const int p, const Mes
 	for (int le = 0; le < 8; ++le)
 		e[le] = mesh.get_index_from_element_edge(c, ev(le, 0), ev(le, 1));
 
-	const int nei      = p - 1;                      // interior nodes per edge
-	const int nfi_tri  = (p - 1) * (p - 2) / 2;     // interior nodes per tri face
-	const int nfi_quad = (p - 1) * (p - 1);          // interior nodes on quad face
+	const int nei = p - 1;                     // interior nodes per edge
+	const int nfi_tri = (p - 1) * (p - 2) / 2; // interior nodes per tri face
+	const int nfi_quad = (p - 1) * (p - 1);    // interior nodes on quad face
 
 	// offsets into the local DOF array (matches pyramid_local_to_global ordering):
 	//   [0..4]               : vertices
 	//   [5 .. 5+8*nei-1]     : edge interiors (le=0..7, nei each)
 	//   [edge_end .. +4*nfi_tri-1] : 4 tri face interiors (lf=0..3)
 	//   [tri_end  .. +nfi_quad-1]  : quad face interiors
-	const int edge_start      = 5;
-	const int tri_face_start  = edge_start + 8 * nei;
+	const int edge_start = 5;
+	const int tri_face_start = edge_start + 8 * nei;
 	const int quad_face_start = tri_face_start + 4 * nfi_tri;
 
 	// Append nei interior nodes for the edge currently pointed to by edge_idx,
@@ -2283,7 +2283,7 @@ Eigen::VectorXi LagrangeBasis3d::pyramid_face_local_nodes(const int p, const Mes
 		const bool forward = (edge_idx.vertex == ev(le, 0));
 		for (int q = 0; q < nei; ++q)
 		{
-			const int local_q  = forward ? q : (nei - 1 - q);
+			const int local_q = forward ? q : (nei - 1 - q);
 			result[ii++] = edge_start + le * nei + local_q;
 		}
 	};
@@ -2320,9 +2320,7 @@ Eigen::VectorXi LagrangeBasis3d::pyramid_face_local_nodes(const int p, const Mes
 			for (int f = 0; f < 4; ++f)
 			{
 				const int gv0 = v[tri_fv[f][0]], gv1 = v[tri_fv[f][1]], gv2 = v[tri_fv[f][2]];
-				if ((fv0 == gv0 || fv0 == gv1 || fv0 == gv2) &&
-				    (fv1 == gv0 || fv1 == gv1 || fv1 == gv2) &&
-				    (fv2 == gv0 || fv2 == gv1 || fv2 == gv2))
+				if ((fv0 == gv0 || fv0 == gv1 || fv0 == gv2) && (fv1 == gv0 || fv1 == gv1 || fv1 == gv2) && (fv2 == gv0 || fv2 == gv1 || fv2 == gv2))
 				{
 					lf = f;
 					break;

@@ -67,35 +67,35 @@ namespace polyfem
 					J(i, i - 1) = b;
 				}
 				Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(J);
-				t = es.eigenvalues();          // nodes on [-1,1]
+				t = es.eigenvalues();                                       // nodes on [-1,1]
 				w = 2.0 * es.eigenvectors().row(0).cwiseAbs2().transpose(); // weights
 			}
 			// Map to [0,1]
 			const Eigen::VectorXd xi1d = (t.array() + 1.0) * 0.5;
-			const Eigen::VectorXd w1d  = w * 0.5;
+			const Eigen::VectorXd w1d = w * 0.5;
 
 			const int nq = n * n * n;
 			quad.points.resize(nq, 3);
 			quad.weights.resize(nq);
 
 			int idx = 0;
-			for (int i = 0; i < n; ++i)   // xi direction
-			for (int j = 0; j < n; ++j)   // eta direction
-			for (int k = 0; k < n; ++k)   // zeta direction
-			{
-				const double xi   = xi1d(i);
-				const double eta  = xi1d(j);
-				const double zeta = xi1d(k);
-				const double one_minus_zeta = 1.0 - zeta;
-				// Duffy Jacobian = (1-zeta)^2 must be strictly positive;
-				// GL nodes never reach the endpoint zeta=1 (the apex singularity).
-				assert(one_minus_zeta > 0 && "Duffy Jacobian degenerate: quadrature point at pyramid apex");
-				quad.points(idx, 0) = xi  * one_minus_zeta;  // x
-				quad.points(idx, 1) = eta * one_minus_zeta;  // y
-				quad.points(idx, 2) = zeta;                   // z
-				quad.weights(idx)   = w1d(i) * w1d(j) * w1d(k) * one_minus_zeta * one_minus_zeta;
-				++idx;
-			}
+			for (int i = 0; i < n; ++i)         // xi direction
+				for (int j = 0; j < n; ++j)     // eta direction
+					for (int k = 0; k < n; ++k) // zeta direction
+					{
+						const double xi = xi1d(i);
+						const double eta = xi1d(j);
+						const double zeta = xi1d(k);
+						const double one_minus_zeta = 1.0 - zeta;
+						// Duffy Jacobian = (1-zeta)^2 must be strictly positive;
+						// GL nodes never reach the endpoint zeta=1 (the apex singularity).
+						assert(one_minus_zeta > 0 && "Duffy Jacobian degenerate: quadrature point at pyramid apex");
+						quad.points(idx, 0) = xi * one_minus_zeta;  // x
+						quad.points(idx, 1) = eta * one_minus_zeta; // y
+						quad.points(idx, 2) = zeta;                 // z
+						quad.weights(idx) = w1d(i) * w1d(j) * w1d(k) * one_minus_zeta * one_minus_zeta;
+						++idx;
+					}
 
 			assert(quad.weights.minCoeff() > 0 && "Duffy quadrature weight non-positive");
 			assert(fabs(quad.weights.sum() - 1.0 / 3.0) < 1e-10);
