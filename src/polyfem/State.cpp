@@ -485,9 +485,6 @@ namespace polyfem
 		if (has_periodic_bc())
 			return false;
 
-		if (optimization_enabled == solver::CacheLevel::Derivatives)
-			return false;
-
 		if (mesh->orders().size() <= 0)
 		{
 			if (args["space"]["discr_order"] == 1)
@@ -558,6 +555,7 @@ namespace polyfem
 		stats.reset();
 
 		disc_orders.resize(mesh->n_elements());
+		disc_ordersq.resize(mesh->n_elements());
 
 		problem->init(*mesh);
 		logger().info("Building {} basis...", (iso_parametric() ? "isoparametric" : "not isoparametric"));
@@ -652,8 +650,12 @@ namespace polyfem
 
 		// TODO: implement prism geometric order
 		Eigen::MatrixXi geom_disc_ordersq = geom_disc_orders;
-		disc_ordersq = disc_orders;
-		// disc_ordersq.setConstant(2);
+		const auto &tmp_json2 = args["space"]["discr_orderq"];
+		if (tmp_json2.is_number_integer())
+		{
+			// tmp fix for n-m order prism
+			disc_ordersq.setConstant(tmp_json2);
+		}
 
 		igl::Timer timer;
 		timer.start();
@@ -1655,7 +1657,10 @@ namespace polyfem
 		logger().info(" took {}s", timings.assigning_rhs_time);
 	}
 
-	void State::solve_problem(Eigen::MatrixXd &sol, Eigen::MatrixXd &pressure, UserPostStepCallback user_post_step)
+	void State::solve_problem(Eigen::MatrixXd &sol,
+							  Eigen::MatrixXd &pressure,
+							  UserPostStepCallback user_post_step,
+							  const InitialConditionOverride *ic_override)
 	{
 		if (!mesh)
 		{
@@ -1682,7 +1687,7 @@ namespace polyfem
 		timer.start();
 		logger().info("Solving {}", assembler->name());
 
-		init_solve(sol, pressure);
+		init_solve(sol, pressure, ic_override);
 
 		if (problem->is_time_dependent())
 		{
@@ -1704,11 +1709,11 @@ namespace polyfem
 			else if (is_homogenization())
 				solve_homogenization(time_steps, t0, dt, sol, user_post_step);
 			else if (is_problem_linear())
-				solve_transient_linear(time_steps, t0, dt, sol, pressure, user_post_step);
+				solve_transient_linear(time_steps, t0, dt, sol, pressure, user_post_step, ic_override);
 			else if (!assembler->is_linear() && problem->is_scalar())
 				throw std::runtime_error("Nonlinear scalar problems are not supported yet!");
 			else
-				solve_transient_tensor_nonlinear(time_steps, t0, dt, sol, user_post_step);
+				solve_transient_tensor_nonlinear(time_steps, t0, dt, sol, user_post_step, ic_override);
 		}
 		else
 		{
@@ -1718,14 +1723,14 @@ namespace polyfem
 				solve_homogenization(/* time steps */ 0, /* t0 */ 0, /* dt */ 0, sol, user_post_step);
 			else if (is_problem_linear())
 			{
-				init_linear_solve(sol);
+				init_linear_solve(sol, 1.0, ic_override);
 				solve_linear(0, sol, pressure, user_post_step);
 			}
 			else if (!assembler->is_linear() && problem->is_scalar())
 				throw std::runtime_error("Nonlinear scalar problems are not supported yet!");
 			else
 			{
-				init_nonlinear_tensor_solve(sol);
+				init_nonlinear_tensor_solve(sol, 1.0, true, ic_override);
 				solve_tensor_nonlinear(0, sol, true, user_post_step);
 
 				const std::string state_path = resolve_output_path(args["output"]["data"]["state"]);
