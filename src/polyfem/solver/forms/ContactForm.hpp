@@ -22,8 +22,9 @@ namespace ipc
 		 {ipc::BroadPhaseMethod::BRUTE_FORCE, "BF"},
 		 {ipc::BroadPhaseMethod::SPATIAL_HASH, "spatial_hash"},
 		 {ipc::BroadPhaseMethod::SPATIAL_HASH, "SH"},
-		 {ipc::BroadPhaseMethod::BVH, "bvh"},
-		 {ipc::BroadPhaseMethod::BVH, "BVH"},
+		 {ipc::BroadPhaseMethod::LBVH, "bvh"},
+		 {ipc::BroadPhaseMethod::LBVH, "BVH"},
+		 {ipc::BroadPhaseMethod::LBVH, "LBVH"},
 		 {ipc::BroadPhaseMethod::SWEEP_AND_TINIEST_QUEUE, "sweep_and_tiniest_queue"},
 		 {ipc::BroadPhaseMethod::SWEEP_AND_TINIEST_QUEUE, "STQ"}})
 } // namespace ipc
