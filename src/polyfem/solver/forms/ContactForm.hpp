@@ -98,7 +98,7 @@ namespace polyfem::solver
 
 		/// @brief Get the current barrier stiffness
 		double barrier_stiffness() const { return barrier_stiffness_; }
-		/// @brief Get the current barrier stiffness
+		/// @brief Set the current barrier stiffness
 		void set_barrier_stiffness(const double barrier_stiffness) { barrier_stiffness_ = barrier_stiffness; }
 		/// @brief Get use_adaptive_barrier_stiffness
 		bool use_adaptive_barrier_stiffness() const { return use_adaptive_barrier_stiffness_; }

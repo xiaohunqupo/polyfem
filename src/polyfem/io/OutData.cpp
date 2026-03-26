@@ -2221,14 +2221,12 @@ namespace polyfem::io
 			collision_mesh, displaced_surface, dhat,
 			/*dmin=*/0, ipc::create_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]).get());
 
-		ipc::BarrierPotential barrier_potential(dhat, 1.0);
+		const double barrier_stiffness = contact_form != nullptr ? contact_form->barrier_stiffness() : 1;
+		ipc::BarrierPotential barrier_potential(dhat, barrier_stiffness);
 		if (state.args["contact"]["use_convergent_formulation"])
 		{
 			barrier_potential.set_use_physical_barrier(state.args["contact"]["use_physical_barrier"]);
 		}
-
-		const double barrier_stiffness = contact_form != nullptr ? contact_form->barrier_stiffness() : 1;
-		barrier_potential.set_stiffness(barrier_stiffness);
 
 		if (opts.contact_forces || opts.export_field("contact_forces"))
 		{
