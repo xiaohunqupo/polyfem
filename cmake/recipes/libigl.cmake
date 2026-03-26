@@ -27,7 +27,7 @@ cmake_dependent_option(LIBIGL_RESTRICTED_TRIANGLE "Build target igl_restricted::
 include(eigen)
 
 include(CPM)
-if(POLYSOLVE_WITH_ACCELERATE)
+#if(POLYSOLVE_WITH_ACCELERATE)
     find_package(Patch REQUIRED)
     set(PATCH_COMMAND_ARGS "-rnN")
 
@@ -52,6 +52,6 @@ if(POLYSOLVE_WITH_ACCELERATE)
         GITHUB_REPOSITORY "libigl/libigl"
         GIT_TAG "v2.5.0"
         PATCH_COMMAND ${PATCH_COMMAND_FOR_CPM})
-else()
-    CPMAddPackage("gh:libigl/libigl@2.5.0")
-endif()
+#else()
+    #CPMAddPackage("gh:libigl/libigl@2.5.0")
+#endif()
