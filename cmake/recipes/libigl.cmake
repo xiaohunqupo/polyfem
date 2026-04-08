@@ -26,25 +26,29 @@ cmake_dependent_option(LIBIGL_RESTRICTED_TRIANGLE "Build target igl_restricted::
 
 include(eigen)
 
-include(CPM)
-CPMAddPackage("gh:libigl/libigl#aeeea9b416a5b5474cb9d12c07ff1238a4c83ba1")
+find_package(Patch REQUIRED)
+set(PATCH_COMMAND_ARGS "-rnN")
 
-# igl/predicates/predicates.h was split into individual headers in new versions.
-# Write a compatibility shim so existing #include <igl/predicates/predicates.h>
-# still compiles without touching downstream source files.
-set(_igl_pred_compat "${libigl_SOURCE_DIR}/include/igl/predicates/predicates.h")
-if(NOT EXISTS "${_igl_pred_compat}")
-    file(WRITE "${_igl_pred_compat}"
-"// Compatibility shim: predicates.h was split into individual headers.
-#pragma once
-#include <igl/predicates/IGL_PREDICATES_ASSERT_SCALAR.h>
-#include <igl/predicates/exactinit.h>
-#include <igl/predicates/orient2d.h>
-#include <igl/predicates/orient3d.h>
-#include <igl/predicates/incircle.h>
-#include <igl/predicates/insphere.h>
-namespace igl::predicates {
-    using Orientation = igl::Orientation;
-}
-")
-endif()
+file(GLOB_RECURSE patches_for_libigl CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/igl_*.patch"
+)
+
+set(PATCH_COMMAND_FOR_CPM_BASE "${Patch_EXECUTABLE}" ${PATCH_COMMAND_ARGS} -p1 < )
+
+set(PATCH_COMMAND_FOR_CPM "")
+foreach(patch_filename IN LISTS patches_for_libigl)
+    list(APPEND PATCH_COMMAND_FOR_CPM ${PATCH_COMMAND_FOR_CPM_BASE})
+    list(APPEND PATCH_COMMAND_FOR_CPM ${patch_filename})
+    list(APPEND PATCH_COMMAND_FOR_CPM &&)
+endforeach()
+list(POP_BACK PATCH_COMMAND_FOR_CPM)
+
+message(DEBUG "Patch command: ${PATCH_COMMAND_FOR_CPM}")
+
+include(CPM)
+CPMAddPackage(
+    NAME libigl
+    GITHUB_REPOSITORY "libigl/libigl"
+    GIT_TAG "aeeea9b416a5b5474cb9d12c07ff1238a4c83ba1"
+    PATCH_COMMAND ${PATCH_COMMAND_FOR_CPM}
+)
