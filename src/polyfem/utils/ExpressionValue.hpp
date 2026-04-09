@@ -25,7 +25,7 @@ namespace polyfem
 			void init(const Eigen::MatrixXd &val);
 			void init(const std::string &expr);
 #ifdef POLYFEM_WITH_PYTHON
-			void init_python(const std::string &path);
+			void init_python(const std::string &path, const std::string &function_name);
 #endif
 
 			void init(const std::function<double(double x, double y, double z)> &func);

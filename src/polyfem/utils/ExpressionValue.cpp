@@ -24,9 +24,10 @@ namespace polyfem
 	{
 #ifdef POLYFEM_WITH_PYTHON
 		namespace py = pybind11;
+
 		namespace
 		{
-			py::object load_python_value_function(const std::string &path)
+			py::object load_python_value_function(const std::string &path, const std::string &function_name)
 			{
 				py::gil_scoped_acquire gil;
 
@@ -48,22 +49,22 @@ namespace polyfem
 				py::object module = importlib_util.attr("module_from_spec")(spec);
 				loader.attr("exec_module")(module);
 
-				if (!py::hasattr(module, "value"))
-					log_and_throw_error(fmt::format("Python expression file '{}' must define a function named 'value'", resolved_path_str));
+				if (!py::hasattr(module, function_name.c_str()))
+					log_and_throw_error(fmt::format("Python expression file '{}' must define a function named '{}'", resolved_path_str, function_name));
 
-				py::object value = module.attr("value");
+				py::object value = module.attr(function_name.c_str());
 				if (!PyCallable_Check(value.ptr()))
-					log_and_throw_error(fmt::format("Python attribute 'value' in '{}' is not callable", resolved_path_str));
+					log_and_throw_error(fmt::format("Python attribute '{}' in '{}' is not callable", function_name, resolved_path_str));
 
 				return value;
 			}
 		} // namespace
 
-		void ExpressionValue::init_python(const std::string &path)
+		void ExpressionValue::init_python(const std::string &path, const std::string &function_name)
 		{
 			clear();
 
-			py::object value = load_python_value_function(path);
+			py::object value = load_python_value_function(path, function_name);
 			auto callable = std::make_shared<py::object>(std::move(value));
 
 			sfunc_ = [callable](double x, double y, double z, double t, int index) -> double {
@@ -77,6 +78,7 @@ namespace polyfem
 				catch (const py::cast_error &)
 				{
 					log_and_throw_error("Python expression must return a scalar convertible to double");
+					return 0;
 				}
 			};
 		}
@@ -169,13 +171,6 @@ namespace polyfem
 			{
 				if (std::filesystem::is_regular_file(path))
 				{
-#ifdef POLYFEM_WITH_PYTHON
-					if (path.extension() == ".py")
-					{
-						init_python(expr);
-						return;
-					}
-#endif
 					read_matrix(expr, mat_);
 					return;
 				}
@@ -253,8 +248,24 @@ namespace polyfem
 			}
 			else if (vals.is_object())
 			{
+				if (vals.contains("unit"))
+				{
+					const std::string unit = vals["unit"].get<std::string>();
+					if (!unit.empty())
+						unit_ = units::unit_from_string(unit);
+				}
 
-				unit_ = units::unit_from_string(vals["unit"].get<std::string>());
+#ifdef POLYFEM_WITH_PYTHON
+				if (vals.contains("file_name"))
+				{
+					const std::string path = vals["file_name"].get<std::string>();
+					const std::string function_name = vals["function_name"].get<std::string>();
+
+					init_python(path, function_name);
+					return;
+				}
+#endif
+
 				init(vals["value"]);
 			}
 			else
