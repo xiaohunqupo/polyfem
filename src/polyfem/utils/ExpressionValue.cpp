@@ -9,6 +9,10 @@
 
 #include <tinyexpr.h>
 #include <filesystem>
+#ifdef POLYFEM_WITH_PYTHON
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#endif
 
 #include <iostream>
 
@@ -18,6 +22,67 @@ namespace polyfem
 
 	namespace utils
 	{
+#ifdef POLYFEM_WITH_PYTHON
+		namespace py = pybind11;
+		namespace
+		{
+			py::object load_python_value_function(const std::string &path)
+			{
+				py::gil_scoped_acquire gil;
+
+				py::module_ importlib_util = py::module_::import("importlib.util");
+				py::module_ pathlib = py::module_::import("pathlib");
+
+				py::object resolved_path = pathlib.attr("Path")(path).attr("resolve")();
+				std::string module_name = resolved_path.attr("stem").cast<std::string>();
+				std::string resolved_path_str = py::str(resolved_path).cast<std::string>();
+
+				py::object spec = importlib_util.attr("spec_from_file_location")(module_name, resolved_path_str);
+				if (spec.is_none())
+					log_and_throw_error(fmt::format("Unable to create Python module spec from '{}'", resolved_path_str));
+
+				py::object loader = spec.attr("loader");
+				if (loader.is_none())
+					log_and_throw_error(fmt::format("Python module '{}' has no loader", resolved_path_str));
+
+				py::object module = importlib_util.attr("module_from_spec")(spec);
+				loader.attr("exec_module")(module);
+
+				if (!py::hasattr(module, "value"))
+					log_and_throw_error(fmt::format("Python expression file '{}' must define a function named 'value'", resolved_path_str));
+
+				py::object value = module.attr("value");
+				if (!PyCallable_Check(value.ptr()))
+					log_and_throw_error(fmt::format("Python attribute 'value' in '{}' is not callable", resolved_path_str));
+
+				return value;
+			}
+		} // namespace
+
+		void ExpressionValue::init_python(const std::string &path)
+		{
+			clear();
+
+			py::object value = load_python_value_function(path);
+			auto callable = std::make_shared<py::object>(std::move(value));
+
+			sfunc_ = [callable](double x, double y, double z, double t, int index) -> double {
+				py::gil_scoped_acquire gil;
+				py::object out = (*callable)(x, y, z, t, index);
+
+				try
+				{
+					return out.cast<double>();
+				}
+				catch (const py::cast_error &)
+				{
+					log_and_throw_error("Python expression must return a scalar convertible to double");
+				}
+			};
+		}
+
+#endif
+
 		static double min(double a, double b) { return a < b ? a : b; }
 		static double max(double a, double b) { return a > b ? a : b; }
 		static double smoothstep(double a)
@@ -102,9 +167,15 @@ namespace polyfem
 
 			try
 			{
-				/* code */
 				if (std::filesystem::is_regular_file(path))
 				{
+#ifdef POLYFEM_WITH_PYTHON
+					if (path.extension() == ".py")
+					{
+						init_python(expr);
+						return;
+					}
+#endif
 					read_matrix(expr, mat_);
 					return;
 				}
@@ -202,7 +273,7 @@ namespace polyfem
 		void ExpressionValue::init(const std::function<double(double x, double y, double z, double t)> &func)
 		{
 			clear();
-			sfunc_ = [func](double x, double y, double z, double t, double index) { return func(x, y, z, t); };
+			sfunc_ = [func](double x, double y, double z, double t, int index) { return func(x, y, z, t); };
 		}
 
 		void ExpressionValue::init(const std::function<double(double x, double y, double z, double t, int index)> &func)
