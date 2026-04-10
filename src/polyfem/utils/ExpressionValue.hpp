@@ -20,10 +20,10 @@ namespace polyfem
 				unit_type_set_ = true;
 			}
 
-			void init(const json &vals);
+			void init(const json &vals, const std::string &root_path);
 			void init(const double val);
 			void init(const Eigen::MatrixXd &val);
-			void init(const std::string &expr);
+			void init(const std::string &expr, const std::string &root_path);
 #ifdef POLYFEM_WITH_PYTHON
 			void init_python(const std::string &path, const std::string &function_name);
 #endif

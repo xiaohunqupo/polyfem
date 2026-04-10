@@ -2,6 +2,7 @@
 
 #include <polyfem/io/MatrixIO.hpp>
 #include <polyfem/utils/Logger.hpp>
+#include <polyfem/utils/StringUtils.hpp>
 
 #include <units/units.hpp>
 
@@ -156,7 +157,7 @@ namespace polyfem
 			mat_ = val;
 		}
 
-		void ExpressionValue::init(const std::string &expr)
+		void ExpressionValue::init(const std::string &expr, const std::string &root_path)
 		{
 			clear();
 
@@ -165,7 +166,7 @@ namespace polyfem
 				return;
 			}
 
-			const auto path = std::filesystem::path(expr);
+			const auto path = std::filesystem::path(utils::resolve_path(expr, root_path));
 
 			try
 			{
@@ -212,7 +213,7 @@ namespace polyfem
 			te_free(tmp);
 		}
 
-		void ExpressionValue::init(const json &vals)
+		void ExpressionValue::init(const json &vals, const std::string &root_path)
 		{
 			clear();
 
@@ -258,7 +259,7 @@ namespace polyfem
 #ifdef POLYFEM_WITH_PYTHON
 				if (vals.contains("file_name"))
 				{
-					const std::string path = vals["file_name"].get<std::string>();
+					const std::string path = utils::resolve_path(vals["file_name"].get<std::string>(), root_path);
 					const std::string function_name = vals["function_name"].get<std::string>();
 
 					init_python(path, function_name);
@@ -270,7 +271,7 @@ namespace polyfem
 			}
 			else
 			{
-				init(vals.get<std::string>());
+				init(vals.get<std::string>(), root_path);
 			}
 		}
 

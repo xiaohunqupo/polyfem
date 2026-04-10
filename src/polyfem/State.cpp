@@ -800,7 +800,7 @@ namespace polyfem
 
 			periodic_bc = std::make_shared<PeriodicBoundary>(problem->is_scalar(), n_bases, bases, mesh_nodes, tile_offset, args["boundary_conditions"]["periodic_boundary"]["tolerance"].get<double>());
 
-			macro_strain_constraint.init(dim, args["boundary_conditions"]["periodic_boundary"]);
+			macro_strain_constraint.init(dim, args["boundary_conditions"]["periodic_boundary"], root_path());
 		}
 
 		if (args["space"]["advanced"]["count_flipped_els"])
@@ -1609,7 +1609,7 @@ namespace polyfem
 			else
 				p_params["bbox_center"] = {delta(0), delta(1)};
 		}
-		problem->set_parameters(p_params);
+		problem->set_parameters(p_params, root_path());
 
 		rhs.resize(0, 0);
 

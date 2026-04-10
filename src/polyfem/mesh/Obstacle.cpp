@@ -106,7 +106,8 @@ namespace polyfem
 			for (size_t d = 0; d < dim_; ++d)
 			{
 				assert(displacement["value"].is_array());
-				displacements_.back().value[d].init(displacement["value"][d]);
+				// TODO root path
+				displacements_.back().value[d].init(displacement["value"][d], "");
 			}
 
 			if (displacement.contains("interpolation"))
@@ -202,8 +203,9 @@ namespace polyfem
 
 		void Obstacle::change_displacement(const int oid, const json &val, const std::shared_ptr<Interpolation> &interp)
 		{
+			// TODO root path
 			for (size_t k = 0; k < val.size(); ++k)
-				displacements_[oid].value[k].init(val[k]);
+				displacements_[oid].value[k].init(val[k], "");
 
 			displacements_[oid].interpolation.clear();
 			displacements_[oid].interpolation.push_back(interp);
