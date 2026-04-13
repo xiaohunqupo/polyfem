@@ -20,9 +20,6 @@
             "file_name",
             "function_name"
         ],
-        "optional": [
-            "unit"
-        ],
         "doc": "Value from python function"
     },
     {

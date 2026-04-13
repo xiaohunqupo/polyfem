@@ -249,12 +249,6 @@ namespace polyfem
 			}
 			else if (vals.is_object())
 			{
-				if (vals.contains("unit"))
-				{
-					const std::string unit = vals["unit"].get<std::string>();
-					if (!unit.empty())
-						unit_ = units::unit_from_string(unit);
-				}
 
 #ifdef POLYFEM_WITH_PYTHON
 				if (vals.contains("file_name"))
@@ -266,6 +260,9 @@ namespace polyfem
 					return;
 				}
 #endif
+				const std::string unit = vals["unit"].get<std::string>();
+				if (!unit.empty())
+					unit_ = units::unit_from_string(unit);
 
 				init(vals["value"]);
 			}
