@@ -92,11 +92,11 @@ TEST_CASE("expression", "[utils]")
 	json jval = {{"value", 1}};
 
 	utils::ExpressionValue expr;
-	expr.init(jexpr["value"]);
+	expr.init(jexpr["value"], "");
 	utils::ExpressionValue expr2d;
-	expr2d.init(jexpr2d["value"]);
+	expr2d.init(jexpr2d["value"], "");
 	utils::ExpressionValue val;
-	val.init(jval["value"]);
+	val.init(jval["value"], "");
 
 	expr.set_unit_type("");
 	expr2d.set_unit_type("");
