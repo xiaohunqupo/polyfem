@@ -12,6 +12,8 @@ RUN apt-get update && \
     git \
     libmpfr-dev \
     libssl-dev \
+    python3 \
+    python3-pip \
     ccache \
     && rm -rf /var/lib/apt/lists/*
 
