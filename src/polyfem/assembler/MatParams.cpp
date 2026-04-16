@@ -614,7 +614,7 @@ namespace polyfem::assembler
 			{
 				for (int j = 0; j < size_; ++j)
 				{
-					dir_[index](i, j).init(i == j ? 1.0 : 0.0, root_path);
+					dir_[index](i, j).init(i == j ? 1.0 : 0.0);
 					dir_[index](i, j).set_unit_type(unit);
 				}
 			}
