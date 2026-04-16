@@ -183,7 +183,7 @@ namespace polyfem
 			{
 				if (std::filesystem::is_regular_file(path))
 				{
-					read_matrix(expr, mat_);
+					read_matrix(path.string(), mat_);
 					return;
 				}
 			}
@@ -218,8 +218,8 @@ namespace polyfem
 			if (!tmp)
 			{
 				logger().error("Unable to parse: {}", expr);
-				logger().error("Error near here: {0: >{1}}", "^", err - 1);
-				assert(false);
+				logger().error("Error near character {}.", err);
+				log_and_throw_error("Invalid expression '{}'.", expr);
 			}
 			te_free(tmp);
 		}
@@ -234,23 +234,29 @@ namespace polyfem
 			}
 			else if (vals.is_array())
 			{
-				mat_.resize(vals.size(), 1);
-
-				for (int i = 0; i < mat_.size(); ++i)
+				if (vals.empty() || vals[0].is_number())
 				{
-					if (vals[i].is_string())
-						break;
-					mat_(i) = vals[i];
+					mat_.resize(vals.size(), 1);
+
+					for (int i = 0; i < mat_.size(); ++i)
+					{
+						if (!vals[i].is_number())
+							log_and_throw_error("Expression arrays must contain either only numbers or only expressions.");
+						mat_(i) = vals[i].get<double>();
+					}
 				}
-
-				if (vals.size() > 0 && vals[0].is_string())
+				else
 				{
-					mat_.resize(0, 0);
 					mat_expr_ = std::vector<ExpressionValue>(vals.size());
 
 					for (int i = 0; i < vals.size(); ++i)
 					{
-						mat_expr_[i].init(vals[i]);
+						mat_expr_[i].init(vals[i], root_path);
+						if (unit_type_set_)
+						{
+							mat_expr_[i].unit_type_ = unit_type_;
+							mat_expr_[i].unit_type_set_ = true;
+						}
 					}
 				}
 
@@ -260,22 +266,44 @@ namespace polyfem
 			}
 			else if (vals.is_object())
 			{
+				units::precise_unit unit;
+				if (vals.contains("unit"))
+				{
+					if (!vals["unit"].is_string())
+						log_and_throw_error("Expression object 'unit' must be a string.");
 
-#ifdef POLYFEM_WITH_PYTHON
+					const std::string unit_str = vals["unit"].get<std::string>();
+					if (!unit_str.empty())
+						unit = units::unit_from_string(unit_str);
+				}
+
 				if (vals.contains("file_name"))
 				{
+#ifndef POLYFEM_WITH_PYTHON
+					log_and_throw_error(
+						"Python expression '{}' requested, but PolyFEM was built without Python support. "
+						"Reconfigure with -DPOLYFEM_WITH_PYTHON=ON to enable Python expressions.",
+						vals["file_name"].dump());
+#else
+					if (!vals["file_name"].is_string())
+						log_and_throw_error("Python expression 'file_name' must be a string.");
+					if (!vals.contains("function_name") || !vals["function_name"].is_string())
+						log_and_throw_error("Python expression '{}' must include a string 'function_name'.", vals["file_name"].get<std::string>());
+
 					const std::string path = utils::resolve_path(vals["file_name"].get<std::string>(), root_path);
 					const std::string function_name = vals["function_name"].get<std::string>();
 
 					init_python(path, function_name);
+					unit_ = unit;
 					return;
-				}
 #endif
-				const std::string unit = vals["unit"].get<std::string>();
-				if (!unit.empty())
-					unit_ = units::unit_from_string(unit);
+				}
 
-				init(vals["value"]);
+				if (!vals.contains("value"))
+					log_and_throw_error("Expression object must contain either 'value' or 'file_name'.");
+
+				init(vals["value"], root_path);
+				unit_ = unit;
 			}
 			else
 			{
@@ -388,7 +416,12 @@ namespace polyfem
 
 				int err;
 				te_expr *tmp = te_compile(expr_.c_str(), vars.data(), vars.size(), &err);
-				assert(tmp != nullptr);
+				if (!tmp)
+				{
+					logger().error("Unable to parse: {}", expr_);
+					logger().error("Error near character {}.", err);
+					log_and_throw_error("Invalid expression '{}'.", expr_);
+				}
 				result = te_eval(tmp);
 				te_free(tmp);
 			}

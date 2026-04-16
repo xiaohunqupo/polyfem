@@ -18,6 +18,8 @@ namespace polyfem
 			{
 				unit_type_ = units::unit_from_string(unit_type);
 				unit_type_set_ = true;
+				for (auto &expr : mat_expr_)
+					expr.set_unit_type(unit_type);
 			}
 
 			void init(const json &vals, const std::string &root_path);
@@ -41,7 +43,10 @@ namespace polyfem
 
 			void clear();
 
-			bool is_zero() const { return expr_.empty() && fabs(value_) < 1e-10; }
+			bool is_zero() const
+			{
+				return expr_.empty() && mat_.size() == 0 && mat_expr_.empty() && !sfunc_ && !tfunc_ && fabs(value_) < 1e-10;
+			}
 			bool is_mat() const
 			{
 				if (expr_.empty() && mat_.size() > 0)

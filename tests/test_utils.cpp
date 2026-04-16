@@ -105,6 +105,15 @@ TEST_CASE("expression", "[utils]")
 	REQUIRE(expr(2, 3, 4) == Catch::Approx(2. * 2. + sqrt(2. * 3.) + sin(4.) * 2.).margin(1e-10));
 	REQUIRE(expr2d(2, 3) == Catch::Approx(2. * 2. + sqrt(2. * 3.)).margin(1e-10));
 	REQUIRE(val(2, 3, 4) == Catch::Approx(1).margin(1e-16));
+
+	utils::ExpressionValue time_expr;
+	time_expr.init(json::array({"x", "2*x"}), "");
+	time_expr.set_t(json::array({0, 1}));
+	time_expr.set_unit_type("");
+
+	REQUIRE_FALSE(time_expr.is_zero());
+	REQUIRE(time_expr(3, 0, 0, 0) == Catch::Approx(3).margin(1e-16));
+	REQUIRE(time_expr(3, 0, 0, 1) == Catch::Approx(6).margin(1e-16));
 }
 
 TEST_CASE("mshreader", "[utils]")
