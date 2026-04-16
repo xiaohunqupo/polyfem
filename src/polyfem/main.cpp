@@ -10,7 +10,18 @@
 #endif
 
 #ifdef POLYFEM_WITH_PYTHON
+// pybind11 enables a debug-only reference counter when NDEBUG is not defined.
+// On MSVC that path can fail with C2480 because it uses a function-local
+// thread_local variable. Keep the workaround scoped to pybind11's headers.
+#if defined(_MSC_VER) && !defined(NDEBUG) && !defined(PYBIND11_HANDLE_REF_DEBUG)
+#define POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
+#define NDEBUG
+#endif
 #include <pybind11/embed.h>
+#ifdef POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
+#undef NDEBUG
+#undef POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
+#endif
 #include <Python.h>
 #endif
 
