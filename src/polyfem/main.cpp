@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <memory>
 
 #include <CLI/CLI.hpp>
 
@@ -145,18 +146,22 @@ int main(int argc, char **argv)
 	std::unique_ptr<py::scoped_interpreter> py_guard;
 	try
 	{
-		PyConfig config;
-		PyConfig_InitPythonConfig(&config);
+		struct PyConfigGuard
+		{
+			PyConfig config;
+
+			PyConfigGuard() { PyConfig_InitPythonConfig(&config); }
+			~PyConfigGuard() { PyConfig_Clear(&config); }
+		} config_guard;
 
 #ifdef POLYFEM_PYTHON_EXECUTABLE
 		wchar_t *program_raw = Py_DecodeLocale(POLYFEM_PYTHON_EXECUTABLE, nullptr);
 		if (program_raw == nullptr)
 			log_and_throw_error("Failed to decode Python executable path.");
-		PyStatus status = PyConfig_SetString(&config, &config.program_name, program_raw);
+		PyStatus status = PyConfig_SetString(&config_guard.config, &config_guard.config.program_name, program_raw);
 		PyMem_RawFree(program_raw);
 		if (PyStatus_Exception(status))
 		{
-			PyConfig_Clear(&config);
 			log_and_throw_error("Failed to configure embedded Python program_name.");
 		}
 #endif
@@ -165,15 +170,14 @@ int main(int argc, char **argv)
 		wchar_t *home_raw = Py_DecodeLocale(POLYFEM_PYTHON_HOME, nullptr);
 		if (home_raw == nullptr)
 			log_and_throw_error("Failed to decode Python home path.");
-		PyStatus status = PyConfig_SetString(&config, &config.home, home_raw);
+		PyStatus home_status = PyConfig_SetString(&config_guard.config, &config_guard.config.home, home_raw);
 		PyMem_RawFree(home_raw);
-		if (PyStatus_Exception(status))
+		if (PyStatus_Exception(home_status))
 		{
-			PyConfig_Clear(&config);
 			log_and_throw_error("Failed to configure embedded Python home.");
 		}
 #endif
-		py_guard = std::make_unique<py::scoped_interpreter>(&config);
+		py_guard = std::make_unique<py::scoped_interpreter>(&config_guard.config);
 	}
 	catch (const std::exception &e)
 	{
