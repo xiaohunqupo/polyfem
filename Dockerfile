@@ -13,6 +13,7 @@ RUN apt-get update && \
     libmpfr-dev \
     libssl-dev \
     python3 \
+    python3-dev \
     python3-pip \
     ccache \
     && rm -rf /var/lib/apt/lists/*
