@@ -10,6 +10,7 @@
 
 #include <tinyexpr.h>
 #include <filesystem>
+#include <memory>
 #ifdef POLYFEM_WITH_PYTHON
 // pybind11 enables a debug-only reference counter when NDEBUG is not defined.
 // On MSVC that path can fail with C2480 because it uses a function-local
@@ -18,6 +19,7 @@
 #define POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
 #define NDEBUG
 #endif
+#include <pybind11/embed.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #ifdef POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
@@ -39,8 +41,90 @@ namespace polyfem
 
 		namespace
 		{
+			class PythonInterpreter
+			{
+			public:
+				static PythonInterpreter &instance()
+				{
+					static PythonInterpreter interpreter;
+					return interpreter;
+				}
+
+				PythonInterpreter(const PythonInterpreter &) = delete;
+				PythonInterpreter &operator=(const PythonInterpreter &) = delete;
+
+			private:
+				PythonInterpreter()
+				{
+					if (!Py_IsInitialized())
+					{
+						// Keep the embedded interpreter alive for the process lifetime.
+						// Python-backed ExpressionValues may be destroyed during static
+						// teardown, and finalizing first makes their py::object cleanup unsafe.
+#ifdef POLYFEM_PYTHON_EXECUTABLE
+						PyConfig config;
+						PyConfig_InitPythonConfig(&config);
+
+						wchar_t *program_raw = Py_DecodeLocale(POLYFEM_PYTHON_EXECUTABLE, nullptr);
+						if (program_raw == nullptr)
+						{
+							PyConfig_Clear(&config);
+							log_and_throw_error("Failed to decode Python executable path.");
+						}
+
+						PyStatus status = PyConfig_SetString(&config, &config.program_name, program_raw);
+						PyMem_RawFree(program_raw);
+						if (PyStatus_Exception(status))
+						{
+							PyConfig_Clear(&config);
+							log_and_throw_error("Failed to configure embedded Python program_name.");
+						}
+
+						guard_ = new py::scoped_interpreter(&config);
+#else
+						guard_ = new py::scoped_interpreter();
+#endif
+					}
+				}
+
+				~PythonInterpreter() = default;
+
+				py::scoped_interpreter *guard_ = nullptr;
+			};
+
+			void ensure_python_interpreter()
+			{
+				try
+				{
+					(void)PythonInterpreter::instance();
+				}
+				catch (const std::exception &e)
+				{
+					log_and_throw_error(fmt::format("Failed to initialize embedded Python: {}", e.what()));
+				}
+			}
+
+			std::shared_ptr<py::object> make_python_object_holder(py::object value)
+			{
+				return std::shared_ptr<py::object>(
+					new py::object(std::move(value)),
+					[](py::object *object) {
+						if (Py_IsInitialized())
+						{
+							py::gil_scoped_acquire gil;
+							delete object;
+						}
+						else
+						{
+							(void)object->release();
+							delete object;
+						}
+					});
+			}
+
 			py::object load_python_value_function(const std::string &path, const std::string &function_name)
 			{
+				ensure_python_interpreter();
 				py::gil_scoped_acquire gil;
 
 				py::module_ importlib_util = py::module_::import("importlib.util");
@@ -77,7 +161,7 @@ namespace polyfem
 			clear();
 
 			py::object value = load_python_value_function(path, function_name);
-			auto callable = std::make_shared<py::object>(std::move(value));
+			auto callable = make_python_object_holder(std::move(value));
 
 			sfunc_ = [callable](double x, double y, double z, double t, int index) -> double {
 				py::gil_scoped_acquire gil;

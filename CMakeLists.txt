@@ -313,9 +313,6 @@ if(POLYFEM_WITH_PYTHON)
     target_link_libraries(polyfem PUBLIC pybind11::embed Python3::Python)
     target_compile_definitions(polyfem PUBLIC POLYFEM_WITH_PYTHON)
     target_compile_definitions(polyfem PUBLIC POLYFEM_PYTHON_EXECUTABLE="${Python3_EXECUTABLE}")
-    if(DEFINED Python3_PREFIX)
-        target_compile_definitions(polyfem PUBLIC POLYFEM_PYTHON_HOME="${Python3_PREFIX}")
-    endif()
 endif()
 
 # # MMG wrapper

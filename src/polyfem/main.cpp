@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <memory>
 
 #include <CLI/CLI.hpp>
 
@@ -8,22 +7,6 @@
 #include <polyfem/State.hpp>
 #ifdef POLYFEM_WITH_OPTIMIZATION
 #include <polyfem/optimization/OptState.hpp>
-#endif
-
-#ifdef POLYFEM_WITH_PYTHON
-// pybind11 enables a debug-only reference counter when NDEBUG is not defined.
-// On MSVC that path can fail with C2480 because it uses a function-local
-// thread_local variable. Keep the workaround scoped to pybind11's headers.
-#if defined(_MSC_VER) && !defined(NDEBUG) && !defined(PYBIND11_HANDLE_REF_DEBUG)
-#define POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
-#define NDEBUG
-#endif
-#include <pybind11/embed.h>
-#ifdef POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
-#undef NDEBUG
-#undef POLYFEM_RESTORE_NDEBUG_AFTER_PYBIND11
-#endif
-#include <Python.h>
 #endif
 
 #include <polyfem/utils/JSONUtils.hpp>
@@ -140,50 +123,6 @@ int main(int argc, char **argv)
 	CLI11_PARSE(command_line, argc, argv);
 
 	json in_args = json({});
-
-#ifdef POLYFEM_WITH_PYTHON
-	namespace py = pybind11;
-	std::unique_ptr<py::scoped_interpreter> py_guard;
-	try
-	{
-		struct PyConfigGuard
-		{
-			PyConfig config;
-
-			PyConfigGuard() { PyConfig_InitPythonConfig(&config); }
-			~PyConfigGuard() { PyConfig_Clear(&config); }
-		} config_guard;
-
-#ifdef POLYFEM_PYTHON_EXECUTABLE
-		wchar_t *program_raw = Py_DecodeLocale(POLYFEM_PYTHON_EXECUTABLE, nullptr);
-		if (program_raw == nullptr)
-			log_and_throw_error("Failed to decode Python executable path.");
-		PyStatus status = PyConfig_SetString(&config_guard.config, &config_guard.config.program_name, program_raw);
-		PyMem_RawFree(program_raw);
-		if (PyStatus_Exception(status))
-		{
-			log_and_throw_error("Failed to configure embedded Python program_name.");
-		}
-#endif
-
-#ifdef POLYFEM_PYTHON_HOME
-		wchar_t *home_raw = Py_DecodeLocale(POLYFEM_PYTHON_HOME, nullptr);
-		if (home_raw == nullptr)
-			log_and_throw_error("Failed to decode Python home path.");
-		PyStatus home_status = PyConfig_SetString(&config_guard.config, &config_guard.config.home, home_raw);
-		PyMem_RawFree(home_raw);
-		if (PyStatus_Exception(home_status))
-		{
-			log_and_throw_error("Failed to configure embedded Python home.");
-		}
-#endif
-		py_guard = std::make_unique<py::scoped_interpreter>(&config_guard.config);
-	}
-	catch (const std::exception &e)
-	{
-		log_and_throw_error(fmt::format("Failed to initialize embedded Python: {}", e.what()));
-	}
-#endif
 
 	if (!json_file.empty() || !yaml_file.empty())
 	{
