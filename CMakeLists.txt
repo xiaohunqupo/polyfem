@@ -79,6 +79,7 @@ option(POLYFEM_REGENERATE_AUTOGEN    "Generate the python autogen files" OFF)
 set(POLYFEM_THREADING "TBB" CACHE STRING "Multithreading library to use (options: CPP, TBB, NONE)")
 set_property(CACHE POLYFEM_THREADING PROPERTY STRINGS "CPP" "TBB" "NONE")
 option(POLYFEM_CODE_COVERAGE "Enable coverage reporting" OFF)
+option(POLYFEM_WITH_PYTHON "Enable Python interpreter support" ON)
 
 add_library(polyfem_coverage_config INTERFACE)
 if(POLYFEM_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -305,6 +306,14 @@ target_link_libraries(polyfem PUBLIC yaml-cpp::yaml-cpp)
 ################################################################################
 # Optional libraries
 ################################################################################
+
+if(POLYFEM_WITH_PYTHON)
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+    include(pybind11)
+    target_link_libraries(polyfem PUBLIC pybind11::embed Python3::Python)
+    target_compile_definitions(polyfem PUBLIC POLYFEM_WITH_PYTHON)
+    target_compile_definitions(polyfem PUBLIC POLYFEM_PYTHON_EXECUTABLE="${Python3_EXECUTABLE}")
+endif()
 
 # # MMG wrapper
 if(POLYFEM_WITH_MMG)

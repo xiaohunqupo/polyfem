@@ -295,16 +295,16 @@ namespace polyfem
 			if (!args["time"].is_null())
 			{
 				const auto tmp = R"({"is_time_dependent": true})"_json;
-				problem->set_parameters(tmp);
+				problem->set_parameters(tmp, root_path());
 			}
 			// important for the BC
 
 			auto bc = args["boundary_conditions"];
 			bc["root_path"] = root_path();
-			problem->set_parameters(bc);
-			problem->set_parameters(args["initial_conditions"]);
+			problem->set_parameters(bc, root_path());
+			problem->set_parameters(args["initial_conditions"], root_path());
 
-			problem->set_parameters(args["output"]);
+			problem->set_parameters(args["output"], root_path());
 		}
 		else
 		{
@@ -320,7 +320,7 @@ namespace polyfem
 				problem->clear();
 			}
 			// important for the BC
-			problem->set_parameters(args["preset_problem"]);
+			problem->set_parameters(args["preset_problem"], root_path());
 		}
 
 		problem->set_units(*assembler, units);
@@ -429,7 +429,7 @@ namespace polyfem
 			body_ids[i] = mesh->get_body_id(i);
 
 		for (auto &a : assemblers)
-			a->set_materials(body_ids, args["materials"], units);
+			a->set_materials(body_ids, args["materials"], units, root_path());
 	}
 
 	void State::set_materials(assembler::Assembler &assembler) const
@@ -444,7 +444,7 @@ namespace polyfem
 		for (int i = 0; i < mesh->n_elements(); ++i)
 			body_ids[i] = mesh->get_body_id(i);
 
-		assembler.set_materials(body_ids, args["materials"], units);
+		assembler.set_materials(body_ids, args["materials"], units, root_path());
 	}
 
 } // namespace polyfem
