@@ -163,7 +163,7 @@ TEST_CASE("inverse", "[utils]")
 }
 
 #ifdef POLYFEM_WITH_ITR
-TEST_CASE("wmtk_instatiation", "[utils]")
+TEST_CASE("wmtk_instantiation", "[utils]")
 {
 	wmtk::TriMesh mesh;
 }

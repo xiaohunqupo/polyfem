@@ -79,7 +79,7 @@ option(POLYFEM_REGENERATE_AUTOGEN    "Generate the python autogen files" OFF)
 set(POLYFEM_THREADING "TBB" CACHE STRING "Multithreading library to use (options: CPP, TBB, NONE)")
 set_property(CACHE POLYFEM_THREADING PROPERTY STRINGS "CPP" "TBB" "NONE")
 option(POLYFEM_CODE_COVERAGE "Enable coverage reporting" OFF)
-option(POLYFEM_WITH_ITR       "Build In timesstep remeshing"              OFF)
+option(POLYFEM_WITH_ITR       "Build In timestep remeshing"              OFF)
 option(POLYFEM_WITH_PYTHON "Enable Python interpreter support" ON)
 
 add_library(polyfem_coverage_config INTERFACE)

@@ -75,6 +75,12 @@ namespace polyfem
 			stats_csv = std::make_unique<RuntimeStatsCSVWriter>(resolve_output_path("stats.csv"), *this, t0, dt);
 		}
 		const bool remesh_enabled = args["space"]["remesh"]["enabled"];
+#ifndef POLYFEM_WITH_ITR
+		if (remesh_enabled)
+		{
+			logger().warn("Remeshing is enabled but Polyfem was built without ITR support; remeshing will be disabled.");
+		}
+#endif
 		// const double save_dt = remesh_enabled ? (dt / 3) : dt;
 
 		// Save the initial solution
