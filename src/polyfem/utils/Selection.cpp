@@ -41,7 +41,8 @@ namespace polyfem::utils
 		else
 			log_and_throw_error("Selection not recognized: {}", selection.dump());
 
-		res->boundary_only_ = selection["boundary_only"];
+		if (selection.contains("boundary_only"))
+			res->boundary_only_ = selection["boundary_only"];
 		return res;
 	}
 
