@@ -36,9 +36,12 @@ namespace polyfem::utils
 				resolve_path(selection["id"], root_path), selection.value("id_offset", 0));
 		else if (selection["id"].is_number_integer()) // assume ID is uniform
 			res = std::make_shared<UniformSelection>(selection["id"]);
+		else if (selection.contains("file"))
+			res = std::make_shared<FileSelection>(resolve_path(selection["file"], root_path));
 		else
 			log_and_throw_error("Selection not recognized: {}", selection.dump());
 
+		res->boundary_only_ = selection["boundary_only"];
 		return res;
 	}
 
@@ -71,6 +74,7 @@ namespace polyfem::utils
 		{
 			log_and_throw_error("Invalid selections: {}", j_selections);
 		}
+
 		return selections;
 	}
 

@@ -43,6 +43,11 @@ namespace polyfem
 				const BBox &mesh_bbox,
 				const std::string &root_path = "");
 
+			inline bool boundary_only() const { return boundary_only_; }
+
+		private:
+			bool boundary_only_ = false;
+
 		protected:
 			Selection() {}
 
