@@ -46,7 +46,7 @@ namespace polyfem
 			inline bool boundary_only() const { return boundary_only_; }
 
 		private:
-			bool boundary_only_ = false;
+			bool boundary_only_ = true;
 
 		protected:
 			Selection() {}
