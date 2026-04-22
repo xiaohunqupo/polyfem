@@ -61,13 +61,13 @@ namespace polyfem::utils
 		}
 		else if (j_selections.is_object())
 		{
-			selections.push_back(build(j_selections, mesh_bbox));
+			selections.push_back(build(j_selections, mesh_bbox, root_path));
 		}
 		else if (j_selections.is_array())
 		{
 			for (const json &s : j_selections.get<std::vector<json>>())
 			{
-				selections.push_back(build(s, mesh_bbox));
+				selections.push_back(build(s, mesh_bbox, root_path));
 			}
 		}
 		else if (!j_selections.is_null())
