@@ -2421,16 +2421,24 @@ namespace polyfem::io
 			writer.add_field("friction_forces", forces_reshaped);
 		}
 
-		ipc::NormalCollisions adhesion_collision_set;
-		adhesion_collision_set.build(
-			collision_mesh, displaced_surface, dhat_a,
-			/*dmin=*/0, ipc::create_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]).get());
+		std::unique_ptr<ipc::NormalCollisions> adhesion_collision_set = nullptr;
+		std::unique_ptr<ipc::NormalAdhesionPotential> normal_adhesion_potential = nullptr;
+		if (opts.normal_adhesion_forces || opts.export_field("normal_adhesion_forces") || opts.tangential_adhesion_forces || opts.export_field("tangential_adhesion_forces"))
+		{
+			adhesion_collision_set = std::make_unique<ipc::NormalCollisions>();
+			adhesion_collision_set->build(
+				collision_mesh, displaced_surface, dhat_a,
+				/*dmin=*/0, ipc::create_broad_phase(state.args["solver"]["contact"]["CCD"]["broad_phase"]).get());
 
-		ipc::NormalAdhesionPotential normal_adhesion_potential(dhat_p, dhat_a, Y, 1);
+			normal_adhesion_potential = std::make_unique<ipc::NormalAdhesionPotential>(dhat_p, dhat_a, Y, 1);
+		}
 
 		if (opts.normal_adhesion_forces || opts.export_field("normal_adhesion_forces"))
 		{
-			Eigen::MatrixXd forces = -1 * normal_adhesion_potential.gradient(adhesion_collision_set, collision_mesh, displaced_surface);
+			assert(adhesion_collision_set);
+			assert(normal_adhesion_potential);
+
+			Eigen::MatrixXd forces = -1 * normal_adhesion_potential->gradient(*adhesion_collision_set, collision_mesh, displaced_surface);
 
 			Eigen::MatrixXd forces_reshaped = utils::unflatten(forces, problem_dim);
 
@@ -2441,10 +2449,13 @@ namespace polyfem::io
 
 		if (opts.tangential_adhesion_forces || opts.export_field("tangential_adhesion_forces"))
 		{
+			assert(adhesion_collision_set);
+			assert(normal_adhesion_potential);
+
 			ipc::TangentialCollisions tangential_collision_set;
 			tangential_collision_set.build(
-				collision_mesh, displaced_surface, adhesion_collision_set,
-				normal_adhesion_potential, tangential_adhesion_coefficient);
+				collision_mesh, displaced_surface, *adhesion_collision_set,
+				*normal_adhesion_potential, tangential_adhesion_coefficient);
 
 			ipc::TangentialAdhesionPotential tangential_adhesion_potential(epsa);
 
