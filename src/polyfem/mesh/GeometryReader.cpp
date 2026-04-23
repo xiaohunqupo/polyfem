@@ -156,7 +156,7 @@ namespace polyfem::mesh
 
 			mesh->compute_node_ids([&](const size_t n_id, const RowVectorNd &p, bool is_boundary) {
 				if (boundary_only && !is_boundary)
-					return std::numeric_limits<int>::max(); // default for no selected boundary
+					return -1;
 
 				const std::vector<int> tmp = {int(n_id)};
 				for (const auto &selection : node_selections)
@@ -193,7 +193,7 @@ namespace polyfem::mesh
 
 			mesh->compute_boundary_ids([&](const size_t p_id, const std::vector<int> &vs, const RowVectorNd &p, bool is_boundary) {
 				if (boundary_only && !is_boundary)
-					return std::numeric_limits<int>::max(); // default for no selected boundary
+					return -1;
 
 				for (const auto &selection : surface_selections)
 				{
