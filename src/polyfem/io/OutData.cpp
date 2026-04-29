@@ -2437,7 +2437,7 @@ namespace polyfem::io
 
 		if (need_normal_adhesion)
 		{
-			Eigen::MatrixXd forces = -1 * normal_adhesion_potential.gradient(*adhesion_collision_set, collision_mesh, displaced_surface);
+			Eigen::MatrixXd forces = -1 * normal_adhesion_potential.gradient(adhesion_collision_set, collision_mesh, displaced_surface);
 
 			Eigen::MatrixXd forces_reshaped = utils::unflatten(forces, problem_dim);
 
