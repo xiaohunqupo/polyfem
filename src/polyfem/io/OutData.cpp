@@ -2437,7 +2437,7 @@ namespace polyfem::io
 
 		if (need_normal_adhesion)
 		{
-			Eigen::MatrixXd forces = -1 * normal_adhesion_potential->gradient(*adhesion_collision_set, collision_mesh, displaced_surface);
+			Eigen::MatrixXd forces = -1 * normal_adhesion_potential.gradient(*adhesion_collision_set, collision_mesh, displaced_surface);
 
 			Eigen::MatrixXd forces_reshaped = utils::unflatten(forces, problem_dim);
 
@@ -2450,8 +2450,8 @@ namespace polyfem::io
 		{
 			ipc::TangentialCollisions tangential_collision_set;
 			tangential_collision_set.build(
-				collision_mesh, displaced_surface, *adhesion_collision_set,
-				*normal_adhesion_potential, tangential_adhesion_coefficient);
+				collision_mesh, displaced_surface, adhesion_collision_set,
+				normal_adhesion_potential, tangential_adhesion_coefficient);
 
 			ipc::TangentialAdhesionPotential tangential_adhesion_potential(epsa);
 
