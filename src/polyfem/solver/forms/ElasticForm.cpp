@@ -329,58 +329,6 @@ namespace polyfem::solver
 
 		const int dim = is_volume_ ? 3 : 2;
 
-		if (check_inversion_ == ElementInversionCheck::Static)
-		{
-			constexpr int kMaxHalvings = 50;
-
-			double step = 1.;
-			bool isvalid = false;
-			int invalidID = -1;
-			Tree subdivision_tree;
-
-			double static_check_time = 0;
-			{
-				POLYFEM_SCOPED_TIMER("Static Jacobian Check", static_check_time);
-				for (int i = 0; i < kMaxHalvings; i++)
-				{
-					const Eigen::VectorXd x_t = x0 + step * (x1 - x0);
-					std::tie(isvalid, invalidID, subdivision_tree) = is_valid(dim, bases_, geom_bases_, x_t, 0., conservative_max_iter_);
-					if (isvalid)
-						break;
-					step *= 0.5;
-				}
-			}
-
-			if (!isvalid)
-				step = 0;
-
-			logger().log(step == 0 ? spdlog::level::err : (step == 1. ? spdlog::level::trace : spdlog::level::debug),
-						 "Static Jacobian max step size: {} at element {}, runtime {} sec, tree depth {}", step, invalidID, static_check_time, subdivision_tree.depth());
-
-			if (invalidID >= 0 && step == 0)
-			{
-				// A step of 0 can never be accepted, so it will never reach
-				// post_step(); commit the refinement candidate immediately so
-				// the next iteration's energy/gradient/Hessian actually sees
-				// this near-degenerate point instead of repeating the same
-				// failure against stale quadrature.
-				commit_refinement(invalidID, subdivision_tree);
-				pending_refinement_.reset();
-			}
-			else if (invalidID >= 0 && step <= 0.5)
-			{
-				// Store as a candidate only; committed in post_step() if/when
-				// this step is accepted (see pending_refinement_ in the header).
-				pending_refinement_ = std::make_pair(invalidID, std::move(subdivision_tree));
-			}
-			else
-			{
-				pending_refinement_.reset();
-			}
-
-			return step;
-		}
-
 		double step, invalidStep;
 		int invalidID;
 

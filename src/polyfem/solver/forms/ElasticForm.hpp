@@ -21,13 +21,11 @@ namespace polyfem::solver
 	{
 		Discrete,
 		Conservative,
-		Static
 	};
 	NLOHMANN_JSON_SERIALIZE_ENUM(
 		polyfem::solver::ElementInversionCheck,
 		{{ElementInversionCheck::Discrete, "Discrete"},
-		 {ElementInversionCheck::Conservative, "Conservative"},
-		 {ElementInversionCheck::Static, "Static"}})
+		 {ElementInversionCheck::Conservative, "Conservative"}})
 
 	/// @brief Form of the elasticity potential and forces
 	class ElasticForm : public Form
