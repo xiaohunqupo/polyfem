@@ -1,4 +1,4 @@
-#include "CorrectedNeoHookeanElasticity.hpp"
+#include "ModifiedNeoHookeanElasticity.hpp"
 
 #include <cmath>
 
@@ -87,22 +87,22 @@ namespace polyfem::assembler
 		}
 	} // namespace
 
-	double CorrectedNeoHookeanElasticity::compute_energy(const NonLinearAssemblerData &data) const
+	double ModifiedNeoHookeanElasticity::compute_energy(const NonLinearAssemblerData &data) const
 	{
 		return NeoHookeanElasticity::compute_energy(data) + barrier_energy(data);
 	}
 
-	Eigen::VectorXd CorrectedNeoHookeanElasticity::assemble_gradient(const NonLinearAssemblerData &data) const
+	Eigen::VectorXd ModifiedNeoHookeanElasticity::assemble_gradient(const NonLinearAssemblerData &data) const
 	{
 		return NeoHookeanElasticity::assemble_gradient(data) + barrier_gradient(data);
 	}
 
-	Eigen::MatrixXd CorrectedNeoHookeanElasticity::assemble_hessian(const NonLinearAssemblerData &data) const
+	Eigen::MatrixXd ModifiedNeoHookeanElasticity::assemble_hessian(const NonLinearAssemblerData &data) const
 	{
 		return NeoHookeanElasticity::assemble_hessian(data) + barrier_hessian(data);
 	}
 
-	double CorrectedNeoHookeanElasticity::barrier_energy(const NonLinearAssemblerData &data) const
+	double ModifiedNeoHookeanElasticity::barrier_energy(const NonLinearAssemblerData &data) const
 	{
 		const int dim = size();
 		const int n_basis = data.vals.basis_values.size();
@@ -139,7 +139,7 @@ namespace polyfem::assembler
 		return energy;
 	}
 
-	Eigen::VectorXd CorrectedNeoHookeanElasticity::barrier_gradient(const NonLinearAssemblerData &data) const
+	Eigen::VectorXd ModifiedNeoHookeanElasticity::barrier_gradient(const NonLinearAssemblerData &data) const
 	{
 		const int dim = size();
 		const int n_basis = data.vals.basis_values.size();
@@ -187,7 +187,7 @@ namespace polyfem::assembler
 		return Eigen::Map<const Eigen::VectorXd>(G_T.data(), G_T.size());
 	}
 
-	Eigen::MatrixXd CorrectedNeoHookeanElasticity::barrier_hessian(const NonLinearAssemblerData &data) const
+	Eigen::MatrixXd ModifiedNeoHookeanElasticity::barrier_hessian(const NonLinearAssemblerData &data) const
 	{
 		const int dim = size();
 		const int n_basis = data.vals.basis_values.size();

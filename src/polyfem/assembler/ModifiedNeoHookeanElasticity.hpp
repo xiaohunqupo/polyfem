@@ -6,7 +6,7 @@
 // positive-jacobian branch (commit c59afca4, later reverted in 342cb860).
 namespace polyfem::assembler
 {
-	class CorrectedNeoHookeanElasticity : public NeoHookeanElasticity
+	class ModifiedNeoHookeanElasticity : public NeoHookeanElasticity
 	{
 	public:
 		using ElasticityNLAssembler::assemble_energy;
@@ -17,7 +17,7 @@ namespace polyfem::assembler
 		Eigen::VectorXd assemble_gradient(const NonLinearAssemblerData &data) const override;
 		Eigen::MatrixXd assemble_hessian(const NonLinearAssemblerData &data) const override;
 
-		std::string name() const override { return "CorrectedNeoHookean"; }
+		std::string name() const override { return "ModifiedNeoHookean"; }
 
 	private:
 		// Barrier correction added on top of the base NeoHookean energy/gradient/hessian.

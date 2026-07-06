@@ -54,8 +54,8 @@ set(SOURCES
 	NeoHookeanElasticity.hpp
 	NeoHookeanElasticityAutodiff.cpp
 	NeoHookeanElasticityAutodiff.hpp
-	CorrectedNeoHookeanElasticity.cpp
-	CorrectedNeoHookeanElasticity.hpp
+	ModifiedNeoHookeanElasticity.cpp
+	ModifiedNeoHookeanElasticity.hpp
 	OgdenElasticity.cpp
 	OgdenElasticity.hpp
 	OgdenElasticity.tpp

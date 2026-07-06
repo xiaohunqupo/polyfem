@@ -7,7 +7,7 @@
             "HookeLinearElasticity",
             "SaintVenant",
             "NeoHookean",
-            "CorrectedNeoHookean",
+            "ModifiedNeoHookean",
             "MooneyRivlin",
             "MooneyRivlin3Param",
             "MooneyRivlin3ParamSymbolic",
@@ -84,7 +84,7 @@
     {
         "pointer": "/",
         "type": "object",
-        "type_name": "CorrectedNeoHookean",
+        "type_name": "ModifiedNeoHookean",
         "required": [
             "type",
             "E",
@@ -101,7 +101,7 @@
     {
         "pointer": "/",
         "type": "object",
-        "type_name": "CorrectedNeoHookean",
+        "type_name": "ModifiedNeoHookean",
         "required": [
             "type",
             "lambda",
