@@ -4,7 +4,6 @@
 #include <sstream>
 #include <spdlog/fmt/fmt.h>
 
-
 namespace polyfem::utils
 {
 	class Tree
@@ -128,7 +127,7 @@ namespace polyfem::utils
 	Eigen::MatrixXd extract_nodes(const int dim, const std::vector<basis::ElementBases> &bases, const std::vector<basis::ElementBases> &gbases, const Eigen::VectorXd &u, int order, int n_elem = -1);
 } // namespace polyfem::utils
 
-template<>
+template <>
 struct fmt::formatter<polyfem::utils::Tree> : fmt::formatter<fmt::string_view>
 {
 	format_context::iterator format(const polyfem::utils::Tree &tree, fmt::format_context &ctx) const
