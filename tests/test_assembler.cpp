@@ -1,8 +1,15 @@
 #include <polyfem/State.hpp>
 
+#include <polyfem/Units.hpp>
+#include <polyfem/assembler/Assembler.hpp>
+#include <polyfem/assembler/AssemblyValsCache.hpp>
 #include <polyfem/assembler/NeoHookeanElasticity.hpp>
 #include <polyfem/assembler/NeoHookeanElasticityAutodiff.hpp>
 #include <polyfem/assembler/ModifiedNeoHookeanElasticity.hpp>
+#include <polyfem/utils/RefElementSampler.hpp>
+#include <polyfem/varforms/VarForm.hpp>
+
+#include "VarFormTestAccess.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
@@ -39,21 +46,28 @@ TEST_CASE("hessian_lin", "[assembler]")
 	state.load_mesh();
 
 	// state.compute_mesh_stats();
-	state.build_basis();
-
-	state.assemble_mass_mat();
+	test::VarFormTestAccess::prepare(*state.variational_formulation);
 
 	SparseMatrixCache mat_cache;
 	StiffnessMatrix hessian, stiffness;
-	Eigen::MatrixXd disp(state.n_bases * 2, 1);
+	varform::VarForm &form = *state.variational_formulation;
+	const test::VarFormDebugData debug = test::VarFormTestAccess::debug_data(form);
+	REQUIRE(debug.assembler != nullptr);
+	REQUIRE(debug.mesh != nullptr);
+	REQUIRE(debug.bases != nullptr);
+	REQUIRE(debug.geometry_bases != nullptr);
+	AssemblyValsCache ass_vals_cache;
+	ass_vals_cache.init_empty();
+	Eigen::MatrixXd disp(debug.n_bases * debug.mesh->dimension(), 1);
 	disp.setZero();
 
-	state.build_stiffness_mat(stiffness);
+	REQUIRE(test::VarFormTestAccess::build_stiffness_mat(form, stiffness));
 
 	for (int rand = 0; rand < 10; ++rand)
 	{
-		state.assembler->assemble_hessian(false, state.n_bases, false,
-										  state.bases, state.bases, state.ass_vals_cache, 0, 0, disp, Eigen::MatrixXd(), mat_cache, hessian);
+		debug.assembler->assemble_hessian(
+			debug.mesh->is_volume(), debug.n_bases, false,
+			*debug.bases, *debug.geometry_bases, ass_vals_cache, 0, 0, disp, Eigen::MatrixXd(), mat_cache, hessian);
 
 		const StiffnessMatrix tmp = stiffness - hessian;
 		const auto val = Catch::Approx(0).margin(1e-8);
@@ -94,21 +108,28 @@ TEST_CASE("hessian_hooke", "[assembler]")
 	state.load_mesh();
 
 	// state.compute_mesh_stats();
-	state.build_basis();
-
-	state.assemble_mass_mat();
+	test::VarFormTestAccess::prepare(*state.variational_formulation);
 
 	SparseMatrixCache mat_cache;
 	StiffnessMatrix hessian, stiffness;
-	Eigen::MatrixXd disp(state.n_bases * 2, 1);
+	varform::VarForm &form = *state.variational_formulation;
+	const test::VarFormDebugData debug = test::VarFormTestAccess::debug_data(form);
+	REQUIRE(debug.assembler != nullptr);
+	REQUIRE(debug.mesh != nullptr);
+	REQUIRE(debug.bases != nullptr);
+	REQUIRE(debug.geometry_bases != nullptr);
+	AssemblyValsCache ass_vals_cache;
+	ass_vals_cache.init_empty();
+	Eigen::MatrixXd disp(debug.n_bases * debug.mesh->dimension(), 1);
 	disp.setZero();
 
-	state.build_stiffness_mat(stiffness);
+	REQUIRE(test::VarFormTestAccess::build_stiffness_mat(form, stiffness));
 
 	for (int rand = 0; rand < 10; ++rand)
 	{
-		state.assembler->assemble_hessian(false, state.n_bases, false,
-										  state.bases, state.bases, state.ass_vals_cache, 0, 0, disp, Eigen::MatrixXd(), mat_cache, hessian);
+		debug.assembler->assemble_hessian(
+			debug.mesh->is_volume(), debug.n_bases, false,
+			*debug.bases, *debug.geometry_bases, ass_vals_cache, 0, 0, disp, Eigen::MatrixXd(), mat_cache, hessian);
 
 		const StiffnessMatrix tmp = stiffness - hessian;
 		const auto val = Catch::Approx(0).margin(1e-8);
@@ -150,7 +171,7 @@ TEST_CASE("generic_elastic_assembler", "[assembler]")
 	state.load_mesh();
 
 	// state.compute_mesh_stats();
-	state.build_basis();
+	test::VarFormTestAccess::prepare(*state.variational_formulation);
 
 	NeoHookeanAutodiff autodiff;
 	NeoHookeanElasticity real;
@@ -158,19 +179,27 @@ TEST_CASE("generic_elastic_assembler", "[assembler]")
 	autodiff.set_size(2);
 	real.set_size(2);
 
-	autodiff.add_multimaterial(0, in_args["materials"], state.units, state.root_path());
-	real.add_multimaterial(0, in_args["materials"], state.units, state.root_path());
+	Units units;
+	units.init(state.args["units"]);
+	const test::VarFormDebugData debug = test::VarFormTestAccess::debug_data(*state.variational_formulation);
+	REQUIRE(debug.mesh != nullptr);
+	REQUIRE(debug.bases != nullptr);
+	REQUIRE(debug.geometry_bases != nullptr);
+
+	autodiff.add_multimaterial(0, in_args["materials"], units, debug.root_path);
+	real.add_multimaterial(0, in_args["materials"], units, debug.root_path);
 
 	const int el_id = 0;
-	const auto &bs = state.bases[el_id];
+	const auto &bs = (*debug.bases)[el_id];
+	const auto &gbs = (*debug.geometry_bases)[el_id];
 	Eigen::MatrixXd local_pts;
 	Eigen::MatrixXi f;
 	regular_2d_grid(10, true, local_pts, f);
 
-	Eigen::MatrixXd displacement(state.n_bases, 1);
+	Eigen::MatrixXd displacement(debug.n_bases, 1);
 
 	ElementAssemblyValues vals;
-	vals.compute(el_id, false, bs, bs);
+	vals.compute(el_id, debug.mesh->is_volume(), bs, gbs);
 
 	const auto &quadrature = vals.quadrature;
 	const QuadratureVector da = vals.det.array() * quadrature.weights.array();
@@ -227,8 +256,8 @@ TEST_CASE("generic_elastic_assembler", "[assembler]")
 		// F stress
 		{
 			Eigen::MatrixXd stressa, stress;
-			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::F, stressa);
-			real.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::F, stress);
+			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::F, stressa);
+			real.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::F, stress);
 
 			for (int i = 0; i < stressa.size(); ++i)
 			{
@@ -242,8 +271,8 @@ TEST_CASE("generic_elastic_assembler", "[assembler]")
 		// cauchy stress
 		{
 			Eigen::MatrixXd stressa, stress;
-			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::CAUCHY, stressa);
-			real.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::CAUCHY, stress);
+			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::CAUCHY, stressa);
+			real.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::CAUCHY, stress);
 
 			for (int i = 0; i < stressa.size(); ++i)
 			{
@@ -257,8 +286,8 @@ TEST_CASE("generic_elastic_assembler", "[assembler]")
 		// pk1 stress
 		{
 			Eigen::MatrixXd stressa, stress;
-			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::PK1, stressa);
-			real.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::PK1, stress);
+			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::PK1, stressa);
+			real.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::PK1, stress);
 
 			for (int i = 0; i < stressa.size(); ++i)
 			{
@@ -272,8 +301,8 @@ TEST_CASE("generic_elastic_assembler", "[assembler]")
 		// pk2 stress
 		{
 			Eigen::MatrixXd stressa, stress;
-			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::PK2, stressa);
-			real.compute_stress_tensor(OutputData(0, el_id, bs, bs, local_pts, displacement), ElasticityTensorType::PK2, stress);
+			autodiff.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::PK2, stressa);
+			real.compute_stress_tensor(OutputData(0, el_id, bs, gbs, local_pts, displacement), ElasticityTensorType::PK2, stress);
 
 			for (int i = 0; i < stressa.size(); ++i)
 			{
