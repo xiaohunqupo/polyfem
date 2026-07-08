@@ -308,7 +308,7 @@ TEST_CASE("jacobian-max-time-step", "[jacobian]")
 		auto state = get_state(dim);
 		const int ndof = state->n_bases * dim;
 		const Eigen::VectorXd u_zero = Eigen::VectorXd::Zero(ndof);
-		const Eigen::VectorXd u_inv  = make_x_flip(*state, dim);
+		const Eigen::VectorXd u_inv = make_x_flip(*state, dim);
 
 		// Same start and end (valid → valid) → step = 1
 		{

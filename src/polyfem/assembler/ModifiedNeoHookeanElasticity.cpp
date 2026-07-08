@@ -229,7 +229,7 @@ namespace polyfem::assembler
 			const Eigen::Map<const Eigen::VectorXd> g_j(delJ_delF.data(), delJ_delF.size());
 
 			const Eigen::MatrixXd hessian_temp = mu * barrier<double>::first_derivatives(J) * del2J_delF2
-												  + mu * barrier<double>::second_derivatives(J) * (g_j * g_j.transpose());
+												 + mu * barrier<double>::second_derivatives(J) * (g_j * g_j.transpose());
 
 			Eigen::MatrixXd delF_delU_tensor = Eigen::MatrixXd::Zero(dim * dim, N);
 			for (int i = 0; i < n_basis; ++i)

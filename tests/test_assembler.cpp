@@ -527,9 +527,10 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 			const int g = vals.basis_values[i].global[0].index;
 			const auto p = state->mesh->point(g);
 			INFO("  node " << i << " (global " << g << "): ref=(" << p(0) << ", " << p(1)
-				 << ")  u=(" << x_comp(g * 2) << ", " << x_comp(g * 2 + 1) << ")");
+						   << ")  u=(" << x_comp(g * 2) << ", " << x_comp(g * 2 + 1) << ")");
 		}
-		INFO("def_grad:\n" << def_grad);
+		INFO("def_grad:\n"
+			 << def_grad);
 		INFO("J at quad point 0 = " << J_check);
 		REQUIRE(J_check < 0.5); // confirm the deformation actually inverts
 	}

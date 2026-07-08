@@ -150,21 +150,37 @@ namespace polyfem::utils
 			{
 				switch (order)
 				{
-				case 1: invalid = JacEval_P1Tri(rv<3>(cp,o,0,tri1_perm), rv<3>(cp,o,1,tri1_perm)) <= 0; break;
-				case 2: invalid = run_solve(make_p2tri_val(cp, o), e); break;
-				case 3: invalid = run_solve(make_p3tri_val(cp, o), e); break;
-				case 4: invalid = run_solve(make_p4tri_val(cp, o), e); break;
-				default: throw std::invalid_argument("Order not supported");
+				case 1:
+					invalid = JacEval_P1Tri(rv<3>(cp, o, 0, tri1_perm), rv<3>(cp, o, 1, tri1_perm)) <= 0;
+					break;
+				case 2:
+					invalid = run_solve(make_p2tri_val(cp, o), e);
+					break;
+				case 3:
+					invalid = run_solve(make_p3tri_val(cp, o), e);
+					break;
+				case 4:
+					invalid = run_solve(make_p4tri_val(cp, o), e);
+					break;
+				default:
+					throw std::invalid_argument("Order not supported");
 				}
 			}
 			else
 			{
 				switch (order)
 				{
-				case 1: invalid = JacEval_P1Tet(rv<4>(cp,o,0,tet1_perm), rv<4>(cp,o,1,tet1_perm), rv<4>(cp,o,2,tet1_perm)) <= 0; break;
-				case 2: invalid = run_solve(make_p2tet_val(cp, o), e); break;
-				case 3: invalid = run_solve(make_p3tet_val(cp, o), e); break;
-				default: throw std::invalid_argument("Order not supported");
+				case 1:
+					invalid = JacEval_P1Tet(rv<4>(cp, o, 0, tet1_perm), rv<4>(cp, o, 1, tet1_perm), rv<4>(cp, o, 2, tet1_perm)) <= 0;
+					break;
+				case 2:
+					invalid = run_solve(make_p2tet_val(cp, o), e);
+					break;
+				case 3:
+					invalid = run_solve(make_p3tet_val(cp, o), e);
+					break;
+				default:
+					throw std::invalid_argument("Order not supported");
 				}
 			}
 			if (invalid)
@@ -212,21 +228,37 @@ namespace polyfem::utils
 			{
 				switch (order)
 				{
-				case 1: invalid = JacEval_P1Tri(rv<3>(cp,o,0,tri1_perm), rv<3>(cp,o,1,tri1_perm)) <= 0; break;
-				case 2: invalid = run_solve(make_p2tri_val(cp, o), e); break;
-				case 3: invalid = run_solve(make_p3tri_val(cp, o), e); break;
-				case 4: invalid = run_solve(make_p4tri_val(cp, o), e); break;
-				default: throw std::invalid_argument("Order not supported");
+				case 1:
+					invalid = JacEval_P1Tri(rv<3>(cp, o, 0, tri1_perm), rv<3>(cp, o, 1, tri1_perm)) <= 0;
+					break;
+				case 2:
+					invalid = run_solve(make_p2tri_val(cp, o), e);
+					break;
+				case 3:
+					invalid = run_solve(make_p3tri_val(cp, o), e);
+					break;
+				case 4:
+					invalid = run_solve(make_p4tri_val(cp, o), e);
+					break;
+				default:
+					throw std::invalid_argument("Order not supported");
 				}
 			}
 			else
 			{
 				switch (order)
 				{
-				case 1: invalid = JacEval_P1Tet(rv<4>(cp,o,0,tet1_perm), rv<4>(cp,o,1,tet1_perm), rv<4>(cp,o,2,tet1_perm)) <= 0; break;
-				case 2: invalid = run_solve(make_p2tet_val(cp, o), e); break;
-				case 3: invalid = run_solve(make_p3tet_val(cp, o), e); break;
-				default: throw std::invalid_argument("Order not supported");
+				case 1:
+					invalid = JacEval_P1Tet(rv<4>(cp, o, 0, tet1_perm), rv<4>(cp, o, 1, tet1_perm), rv<4>(cp, o, 2, tet1_perm)) <= 0;
+					break;
+				case 2:
+					invalid = run_solve(make_p2tet_val(cp, o), e);
+					break;
+				case 3:
+					invalid = run_solve(make_p3tet_val(cp, o), e);
+					break;
+				default:
+					throw std::invalid_argument("Order not supported");
 				}
 			}
 			if (invalid)
@@ -260,7 +292,6 @@ namespace polyfem::utils
 		const Eigen::MatrixXd cp1 = extract_nodes(dim, bases, gbases, u1, order);
 		const Eigen::MatrixXd cp2 = extract_nodes(dim, bases, gbases, u2, order);
 		const int n_elem = static_cast<int>(bases.size());
-
 
 		double step = 1.0;
 		int invalid_id = -1;
@@ -303,21 +334,37 @@ namespace polyfem::utils
 		{
 			switch (order)
 			{
-			case 1: run_batch([&](int o) { return make_p1tri_cgv(cp1, cp2, o); }); break;
-			case 2: run_batch([&](int o) { return make_p2tri_cgv(cp1, cp2, o); }); break;
-			case 3: run_batch([&](int o) { return make_p3tri_cgv(cp1, cp2, o); }); break;
-			case 4: run_batch([&](int o) { return make_p4tri_cgv(cp1, cp2, o); }); break;
-			default: throw std::invalid_argument("Order not supported");
+			case 1:
+				run_batch([&](int o) { return make_p1tri_cgv(cp1, cp2, o); });
+				break;
+			case 2:
+				run_batch([&](int o) { return make_p2tri_cgv(cp1, cp2, o); });
+				break;
+			case 3:
+				run_batch([&](int o) { return make_p3tri_cgv(cp1, cp2, o); });
+				break;
+			case 4:
+				run_batch([&](int o) { return make_p4tri_cgv(cp1, cp2, o); });
+				break;
+			default:
+				throw std::invalid_argument("Order not supported");
 			}
 		}
 		else
 		{
 			switch (order)
 			{
-			case 1: run_batch([&](int o) { return make_p1tet_cgv(cp1, cp2, o); }); break;
-			case 2: run_batch([&](int o) { return make_p2tet_cgv(cp1, cp2, o); }); break;
-			case 3: run_batch([&](int o) { return make_p3tet_cgv(cp1, cp2, o); }); break;
-			default: throw std::invalid_argument("Order not supported");
+			case 1:
+				run_batch([&](int o) { return make_p1tet_cgv(cp1, cp2, o); });
+				break;
+			case 2:
+				run_batch([&](int o) { return make_p2tet_cgv(cp1, cp2, o); });
+				break;
+			case 3:
+				run_batch([&](int o) { return make_p3tet_cgv(cp1, cp2, o); });
+				break;
+			default:
+				throw std::invalid_argument("Order not supported");
 			}
 		}
 
