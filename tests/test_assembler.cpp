@@ -488,8 +488,8 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 	// Single known triangle: vertices at (0,0),(1,0),(0,1). DOFs are 0,1,2.
 	Eigen::MatrixXd V(3, 2);
 	V << 0, 0,
-	     1, 0,
-	     0, 1;
+		1, 0,
+		0, 1;
 	Eigen::MatrixXi F(1, 3);
 	F << 0, 1, 2;
 
@@ -516,7 +516,9 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 	NeoHookeanElasticity neo;
 	neo.set_size(2);
 	json mat;
-	mat["type"] = "NeoHookean"; mat["E"] = 1e5; mat["nu"] = 0.3;
+	mat["type"] = "NeoHookean";
+	mat["E"] = 1e5;
+	mat["nu"] = 0.3;
 	modified.add_multimaterial(0, mat, units, debug.root_path);
 	neo.add_multimaterial(0, mat, units, debug.root_path);
 
@@ -529,8 +531,9 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 	// DOFs 0,1,2 correspond directly to triangle vertices 0,1,2.
 	auto make_x = [&](double s) {
 		Eigen::MatrixXd x = Eigen::MatrixXd::Zero(6, 1);
-		for (int i = 0; i < 3; ++i) {
-			x(i * 2)     = (s - 1.0) * V(i, 0);
+		for (int i = 0; i < 3; ++i)
+		{
+			x(i * 2) = (s - 1.0) * V(i, 0);
 			x(i * 2 + 1) = (s - 1.0) * V(i, 1);
 		}
 		return x;
