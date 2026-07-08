@@ -251,10 +251,10 @@ TEST_CASE("jacobian-tree", "[jacobian]")
 // Helper: invert one element by dragging a single node far in +x.
 // Uses local node 1 of element 1; among the 3 nodes, partition-of-unity
 // guarantees at least one has a positive n_x, and node 1 does for this mesh.
-static Eigen::VectorXd make_x_flip(const State &state, const int dim)
+static Eigen::VectorXd make_x_flip(const test::VarFormDebugData &debug, const int dim)
 {
-	Eigen::VectorXd u = Eigen::VectorXd::Zero(state.n_bases * dim);
-	const int dof = state.bases[1].bases[1].global()[0].index;
+	Eigen::VectorXd u = Eigen::VectorXd::Zero(debug.n_bases * dim);
+	const int dof = (*debug.bases)[1].bases[1].global()[0].index;
 	u(dof * dim) = 10.0;
 	return u;
 }
@@ -264,20 +264,21 @@ TEST_CASE("jacobian-is-valid", "[jacobian]")
 	for (const int dim : {2, 3})
 	{
 		auto state = get_state(dim);
-		const int ndof = state->n_bases * dim;
+		const auto debug = test::VarFormTestAccess::debug_data(*state->variational_formulation);
+		const int ndof = debug.n_bases * dim;
 
 		// Zero displacement → all elements valid
 		{
 			const Eigen::VectorXd u = Eigen::VectorXd::Zero(ndof);
-			auto [valid, inv_id, tree] = is_valid(dim, state->bases, state->geom_bases(), u);
+			auto [valid, inv_id, tree] = is_valid(dim, *debug.bases, *debug.geometry_bases, u);
 			REQUIRE(valid);
 			REQUIRE(inv_id == -1);
 		}
 
 		// x-flip → det F = -1 everywhere → all elements invalid
 		{
-			const Eigen::VectorXd u_inv = make_x_flip(*state, dim);
-			auto [valid, inv_id, tree] = is_valid(dim, state->bases, state->geom_bases(), u_inv);
+			const Eigen::VectorXd u_inv = make_x_flip(debug, dim);
+			auto [valid, inv_id, tree] = is_valid(dim, *debug.bases, *debug.geometry_bases, u_inv);
 			REQUIRE(!valid);
 			REQUIRE(inv_id >= 0);
 		}
@@ -289,15 +290,16 @@ TEST_CASE("jacobian-count-invalid", "[jacobian]")
 	for (const int dim : {2, 3})
 	{
 		auto state = get_state(dim);
-		const int ndof = state->n_bases * dim;
+		const auto debug = test::VarFormTestAccess::debug_data(*state->variational_formulation);
+		const int ndof = debug.n_bases * dim;
 
 		// Zero displacement → no invalid elements
 		const Eigen::VectorXd u_valid = Eigen::VectorXd::Zero(ndof);
-		REQUIRE(count_invalid(dim, state->bases, state->geom_bases(), u_valid).empty());
+		REQUIRE(count_invalid(dim, *debug.bases, *debug.geometry_bases, u_valid).empty());
 
 		// x-flip → all elements invalid
-		const Eigen::VectorXd u_inv = make_x_flip(*state, dim);
-		REQUIRE(!count_invalid(dim, state->bases, state->geom_bases(), u_inv).empty());
+		const Eigen::VectorXd u_inv = make_x_flip(debug, dim);
+		REQUIRE(!count_invalid(dim, *debug.bases, *debug.geometry_bases, u_inv).empty());
 	}
 }
 
@@ -306,24 +308,25 @@ TEST_CASE("jacobian-max-time-step", "[jacobian]")
 	for (const int dim : {2, 3})
 	{
 		auto state = get_state(dim);
-		const int ndof = state->n_bases * dim;
+		const auto debug = test::VarFormTestAccess::debug_data(*state->variational_formulation);
+		const int ndof = debug.n_bases * dim;
 		const Eigen::VectorXd u_zero = Eigen::VectorXd::Zero(ndof);
-		const Eigen::VectorXd u_inv = make_x_flip(*state, dim);
+		const Eigen::VectorXd u_inv = make_x_flip(debug, dim);
 
 		// Same start and end (valid → valid) → step = 1
 		{
-			auto [step, id, inv_s, tree] = max_time_step(dim, state->bases, state->geom_bases(), u_zero, u_zero);
+			auto [step, id, inv_s, tree] = max_time_step(dim, *debug.bases, *debug.geometry_bases, u_zero, u_zero);
 			REQUIRE(step == Catch::Approx(1.0));
 		}
 
 		// Valid → inverted → step ∈ (0, 1)
-		auto [step, id, inv_s, tree] = max_time_step(dim, state->bases, state->geom_bases(), u_zero, u_inv);
+		auto [step, id, inv_s, tree] = max_time_step(dim, *debug.bases, *debug.geometry_bases, u_zero, u_inv);
 		REQUIRE(step > 0.0);
 		REQUIRE(step < 1.0);
 
 		// Certified endpoint must be valid: u0 + step*(u_inv - u0) = step*u_inv
 		const Eigen::VectorXd u_cert = step * u_inv;
-		auto [cert_valid, cert_id, cert_tree] = is_valid(dim, state->bases, state->geom_bases(), u_cert);
+		auto [cert_valid, cert_id, cert_tree] = is_valid(dim, *debug.bases, *debug.geometry_bases, u_cert);
 		REQUIRE(cert_valid);
 	}
 }

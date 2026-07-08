@@ -335,12 +335,12 @@ namespace
 		state->init_logger("", spdlog::level::err, spdlog::level::off, false);
 		state->init(in_args, true);
 		state->load_mesh();
-		state->build_basis();
+		test::VarFormTestAccess::prepare(*state->variational_formulation);
 		return state;
 	}
 
 	// Set up a ModifiedNeoHookeanElasticity with E=1e5, nu=0.3.
-	ModifiedNeoHookeanElasticity make_modified_assembler(const State &state)
+	ModifiedNeoHookeanElasticity make_modified_assembler(const Units &units, const std::string &root_path)
 	{
 		ModifiedNeoHookeanElasticity a;
 		a.set_size(2);
@@ -348,7 +348,7 @@ namespace
 		mat["type"] = "ModifiedNeoHookean";
 		mat["E"] = 1e5;
 		mat["nu"] = 0.3;
-		a.add_multimaterial(0, mat, state.units, state.root_path());
+		a.add_multimaterial(0, mat, units, root_path);
 		return a;
 	}
 } // namespace
@@ -357,18 +357,21 @@ namespace
 TEST_CASE("modified-neohookean-gradient", "[assembler]")
 {
 	auto state = make_state_2d();
-	auto assembler = make_modified_assembler(*state);
+	const test::VarFormDebugData debug = test::VarFormTestAccess::debug_data(*state->variational_formulation);
+	Units units;
+	units.init(state->args["units"]);
+	auto assembler = make_modified_assembler(units, debug.root_path);
 
 	const int dim = 2;
 	const int el_id = 0;
-	const auto &bs = state->bases[el_id];
+	const auto &bs = (*debug.bases)[el_id];
 	ElementAssemblyValues vals;
 	vals.compute(el_id, false, bs, bs);
 	const QuadratureVector da = vals.det.array() * vals.quadrature.weights.array();
 	const int n_local = static_cast<int>(vals.basis_values.size());
 
 	// Correct global DOF vector size
-	Eigen::MatrixXd x0(state->n_bases * dim, 1);
+	Eigen::MatrixXd x0(debug.n_bases * dim, 1);
 	const double eps = 1e-7;
 
 	for (int trial = 0; trial < 5; ++trial)
@@ -399,17 +402,20 @@ TEST_CASE("modified-neohookean-gradient", "[assembler]")
 TEST_CASE("modified-neohookean-hessian", "[assembler]")
 {
 	auto state = make_state_2d();
-	auto assembler = make_modified_assembler(*state);
+	const test::VarFormDebugData debug = test::VarFormTestAccess::debug_data(*state->variational_formulation);
+	Units units;
+	units.init(state->args["units"]);
+	auto assembler = make_modified_assembler(units, debug.root_path);
 
 	const int dim = 2;
 	const int el_id = 0;
-	const auto &bs = state->bases[el_id];
+	const auto &bs = (*debug.bases)[el_id];
 	ElementAssemblyValues vals;
 	vals.compute(el_id, false, bs, bs);
 	const QuadratureVector da = vals.det.array() * vals.quadrature.weights.array();
 	const int n_local = static_cast<int>(vals.basis_values.size());
 
-	Eigen::MatrixXd x0(state->n_bases * dim, 1);
+	Eigen::MatrixXd x0(debug.n_bases * dim, 1);
 	const double eps = 1e-5;
 
 	for (int trial = 0; trial < 3; ++trial)
@@ -445,7 +451,10 @@ TEST_CASE("modified-neohookean-hessian", "[assembler]")
 TEST_CASE("modified-neohookean-barrier-zero", "[assembler]")
 {
 	auto state = make_state_2d();
-	auto modified = make_modified_assembler(*state);
+	const test::VarFormDebugData debug = test::VarFormTestAccess::debug_data(*state->variational_formulation);
+	Units units;
+	units.init(state->args["units"]);
+	auto modified = make_modified_assembler(units, debug.root_path);
 
 	NeoHookeanElasticity neo;
 	neo.set_size(2);
@@ -453,16 +462,16 @@ TEST_CASE("modified-neohookean-barrier-zero", "[assembler]")
 	mat["type"] = "NeoHookean";
 	mat["E"] = 1e5;
 	mat["nu"] = 0.3;
-	neo.add_multimaterial(0, mat, state->units, state->root_path());
+	neo.add_multimaterial(0, mat, units, debug.root_path);
 
 	const int el_id = 0;
-	const auto &bs = state->bases[el_id];
+	const auto &bs = (*debug.bases)[el_id];
 	ElementAssemblyValues vals;
 	vals.compute(el_id, false, bs, bs);
 	const QuadratureVector da = vals.det.array() * vals.quadrature.weights.array();
 
 	// At zero displacement J = 1 >> 0.5 → barrier = 0 → energies match
-	const Eigen::MatrixXd x_zero = Eigen::MatrixXd::Zero(state->n_bases * 2, 1);
+	const Eigen::MatrixXd x_zero = Eigen::MatrixXd::Zero(debug.n_bases * 2, 1);
 	const NonLinearAssemblerData data(vals, 0, 0, x_zero, x_zero, da);
 
 	REQUIRE(modified.compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-14));
@@ -473,74 +482,79 @@ TEST_CASE("modified-neohookean-barrier-zero", "[assembler]")
 		REQUIRE(g_mod(i) == Catch::Approx(g_neo(i)).margin(1e-14));
 }
 
-// Barrier is active when J < 0.5: compressed element has strictly higher energy than NeoHookean.
+// Barrier activates below J=0.5: at large compression e_mod > e_neo.
 TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 {
-	auto state = make_state_2d();
-	auto modified = make_modified_assembler(*state);
+	// Single known triangle: vertices at (0,0),(1,0),(0,1). DOFs are 0,1,2.
+	Eigen::MatrixXd V(3, 2);
+	V << 0, 0,
+	     1, 0,
+	     0, 1;
+	Eigen::MatrixXi F(1, 3);
+	F << 0, 1, 2;
 
+	json in_args;
+	in_args["geometry"][0]["mesh"] = "";
+	in_args["materials"]["type"] = "NeoHookean";
+	in_args["materials"]["E"] = 1e5;
+	in_args["materials"]["nu"] = 0.3;
+	in_args["time"]["dt"] = 0.001;
+	in_args["time"]["tend"] = 1.0;
+
+	State state;
+	state.init_logger("", spdlog::level::err, spdlog::level::off, false);
+	state.init(in_args, false);
+	state.load_mesh(V, F);
+	test::VarFormTestAccess::prepare(*state.variational_formulation);
+
+	const auto debug = test::VarFormTestAccess::debug_data(*state.variational_formulation);
+	Units units;
+	units.init(state.args["units"]);
+
+	ModifiedNeoHookeanElasticity modified;
+	modified.set_size(2);
 	NeoHookeanElasticity neo;
 	neo.set_size(2);
 	json mat;
-	mat["type"] = "NeoHookean";
-	mat["E"] = 1e5;
-	mat["nu"] = 0.3;
-	neo.add_multimaterial(0, mat, state->units, state->root_path());
+	mat["type"] = "NeoHookean"; mat["E"] = 1e5; mat["nu"] = 0.3;
+	modified.add_multimaterial(0, mat, units, debug.root_path);
+	neo.add_multimaterial(0, mat, units, debug.root_path);
 
-	const int el_id = 0;
-	const auto &bs = state->bases[el_id];
+	const auto &bs = (*debug.bases)[0];
 	ElementAssemblyValues vals;
-	vals.compute(el_id, false, bs, bs);
+	vals.compute(0, false, bs, bs);
 	const QuadratureVector da = vals.det.array() * vals.quadrature.weights.array();
-	const int n_local = static_cast<int>(vals.basis_values.size());
 
-	// Scale entire mesh by 0.4 in x: u_x = -0.6 * X_x for every node.
-	// For P1 this gives ∂u_x/∂X_x = -0.6 exactly → F = diag(0.4, 1) → J = 0.4 < 0.5.
-	// mesh->point(v) is indexed by INPUT vertex; in_node_to_node[v] gives the DOF.
-	Eigen::MatrixXd x_comp = Eigen::MatrixXd::Zero(state->n_bases * 2, 1);
-	for (int v = 0; v < state->mesh->n_vertices(); ++v)
-	{
-		const int dof = state->in_node_to_node[v];
-		if (dof < state->n_bases)
-			x_comp(dof * 2) = -0.6 * state->mesh->point(v)(0); // u_x = -0.6 X_x
-	}
-
-	// Verify J at the first quadrature point so failures show the actual deformation gradient.
-	{
-		Eigen::MatrixXd local_disp(n_local, 2);
-		local_disp.setZero();
-		for (int i = 0; i < n_local; ++i)
-			for (const auto &gv : vals.basis_values[i].global)
-				for (int d = 0; d < 2; ++d)
-					local_disp(i, d) += gv.val * x_comp(gv.index * 2 + d);
-
-		Eigen::MatrixXd grad(n_local, 2);
-		for (int i = 0; i < n_local; ++i)
-			grad.row(i) = vals.basis_values[i].grad.row(0);
-
-		const Eigen::MatrixXd def_grad =
-			(local_disp.transpose() * grad) * vals.jac_it[0] + Eigen::MatrixXd::Identity(2, 2);
-		const double J_check = def_grad.determinant();
-
-		for (int i = 0; i < n_local; ++i)
-		{
-			const int g = vals.basis_values[i].global[0].index;
-			const auto p = state->mesh->point(g);
-			INFO("  node " << i << " (global " << g << "): ref=(" << p(0) << ", " << p(1)
-						   << ")  u=(" << x_comp(g * 2) << ", " << x_comp(g * 2 + 1) << ")");
+	// u = (s-1)*V, packed as [u0x,u0y, u1x,u1y, u2x,u2y].
+	// DOFs 0,1,2 correspond directly to triangle vertices 0,1,2.
+	auto make_x = [&](double s) {
+		Eigen::MatrixXd x = Eigen::MatrixXd::Zero(6, 1);
+		for (int i = 0; i < 3; ++i) {
+			x(i * 2)     = (s - 1.0) * V(i, 0);
+			x(i * 2 + 1) = (s - 1.0) * V(i, 1);
 		}
-		INFO("def_grad:\n"
-			 << def_grad);
-		INFO("J at quad point 0 = " << J_check);
-		REQUIRE(J_check < 0.5); // confirm the deformation actually inverts
+		return x;
+	};
+
+	// Zero displacement: barrier inactive, energies equal.
+	{
+		const auto x = make_x(1.0);
+		const NonLinearAssemblerData data(vals, 0, 0, x, x, da);
+		REQUIRE(modified.compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-14));
 	}
 
-	const NonLinearAssemblerData data(vals, 0, 0, x_comp, x_comp, da);
-	const double e_mod = modified.compute_energy(data);
-	const double e_neo = neo.compute_energy(data);
+	// s=0.9: J=0.81 > 0.5, barrier inactive, energies equal.
 	{
-		INFO("e_neo = " << e_neo << "  e_mod = " << e_mod << "  diff = " << (e_mod - e_neo));
-		REQUIRE(std::isfinite(e_mod));
-		REQUIRE(e_mod > e_neo); // barrier term > 0 when J < 0.5
+		const auto x = make_x(0.9);
+		const NonLinearAssemblerData data(vals, 0, 0, x, x, da);
+		REQUIRE(modified.compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-10));
+	}
+
+	// s=0.6: J=0.36 < 0.5, barrier active, e_mod > e_neo.
+	{
+		const auto x = make_x(0.6);
+		const NonLinearAssemblerData data(vals, 0, 0, x, x, da);
+		REQUIRE(std::isfinite(modified.compute_energy(data)));
+		REQUIRE(modified.compute_energy(data) > neo.compute_energy(data));
 	}
 }
