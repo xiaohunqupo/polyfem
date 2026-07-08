@@ -183,7 +183,8 @@ namespace polyfem::solver
 			if (damping_assembler != nullptr)
 			{
 				damping_form = std::make_shared<ElasticForm>(
-					n_bases, bases, geom_bases, *damping_assembler, ass_vals_cache, t, dt, is_volume);
+					n_bases, bases, geom_bases, *damping_assembler, ass_vals_cache, t, dt, is_volume,
+					0., ElementInversionCheck::Discrete, conservative_max_iter);
 				forms.push_back(damping_form);
 			}
 		}

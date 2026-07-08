@@ -42,9 +42,9 @@ namespace polyfem::solver
 					assembler::AssemblyValsCache &ass_vals_cache,
 					const double t, const double dt,
 					const bool is_volume,
-					const double jacobian_threshold = 0.,
-					const ElementInversionCheck check_inversion = ElementInversionCheck::Discrete,
-					const unsigned conservative_max_iter = 1'000'000);
+					const double jacobian_threshold,
+					const ElementInversionCheck check_inversion,
+					const unsigned conservative_max_iter);
 
 		std::string name() const override { return "elastic"; }
 

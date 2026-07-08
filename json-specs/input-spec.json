@@ -1698,7 +1698,7 @@
     {
         "pointer": "/solver/advanced/conservative_max_iter",
         "type": "int",
-        "default": 1000000,
+        "default": 100000,
         "doc": "Maximum number of subdivision iterations for the conservative (robust) Jacobian inversion check."
     },
     {
