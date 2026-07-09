@@ -1,4 +1,6 @@
-#include "ModifiedNeoHookeanElasticity.hpp"
+#include "InversionBarrier.hpp"
+
+#include <polyfem/utils/ElasticityUtils.hpp>
 
 #include <cmath>
 
@@ -6,7 +8,7 @@ namespace polyfem::assembler
 {
 	namespace
 	{
-		// Zero for J >= 0.5, smoothly diverges to +inf as J -> 0.
+		// Zero for J >= JBarrierThreshold, smoothly diverges to +inf as J -> 0.
 		// Scaled by mu at the call sites.
 		template <class T, int p = 3>
 		class barrier
@@ -15,31 +17,31 @@ namespace polyfem::assembler
 
 		public:
 			static_assert(p % 2 == 1);
-			static T value(T J)
+			static T value(T J, double JBarrierThreshold)
 			{
-				if (J >= 0.5)
+				if (J >= JBarrierThreshold)
 					return T(0.);
-				const T tmp1 = 2 * J - 1;
+				const T tmp1 = J / JBarrierThreshold - 1;
 				const T tmp2 = pow(tmp1, p);
 				return C * (1 / (tmp2 + 1) - 1);
 			}
 
-			static T first_derivatives(T J)
+			static T first_derivatives(T J, double JBarrierThreshold)
 			{
-				if (J >= 0.5)
+				if (J >= JBarrierThreshold)
 					return T(0);
-				const T tmp1 = 2 * J - 1;
+				const T tmp1 = J / JBarrierThreshold - 1;
 				const T tmp2 = pow(tmp1, p);
-				return C * -2 * p * tmp2 / tmp1 / pow(1 + tmp2, 2);
+				return C * (-1 / JBarrierThreshold) * p * tmp2 / tmp1 / pow(1 + tmp2, 2);
 			}
 
-			static T second_derivatives(T J)
+			static T second_derivatives(T J, double JBarrierThreshold)
 			{
-				if (J >= 0.5)
+				if (J >= JBarrierThreshold)
 					return T(0);
-				const T tmp1 = 2 * J - 1;
+				const T tmp1 = J / JBarrierThreshold - 1;
 				const T tmp2 = pow(tmp1, p);
-				return C * 4 * p * tmp2 / pow(tmp1, 2) * ((1 - p) + (1 + p) * tmp2) / pow(1 + tmp2, 3);
+				return C * (1 / (JBarrierThreshold * JBarrierThreshold)) * p * tmp2 / pow(tmp1, 2) * ((1 - p) + (1 + p) * tmp2) / pow(1 + tmp2, 3);
 			}
 		};
 
@@ -87,22 +89,97 @@ namespace polyfem::assembler
 		}
 	} // namespace
 
-	double ModifiedNeoHookeanElasticity::compute_energy(const NonLinearAssemblerData &data) const
+	InversionBarrier::InversionBarrier()
+		: JBarrierThreshold_("JBarrierThreshold")
 	{
-		return NeoHookeanElasticity::compute_energy(data) + barrier_energy(data);
 	}
 
-	Eigen::VectorXd ModifiedNeoHookeanElasticity::assemble_gradient(const NonLinearAssemblerData &data) const
+	void InversionBarrier::add_multimaterial(const int index, const json &params, const Units &units, const std::string &root_path)
 	{
-		return NeoHookeanElasticity::assemble_gradient(data) + barrier_gradient(data);
+		assert(size() == 2 || size() == 3);
+
+		params_.add_multimaterial(index, params, size() == 3, units.stress(), root_path);
+
+		// Default activation threshold matches the original hardcoded barrier (J >= 0.5 is inactive).
+		if (params.count("JBarrierThreshold"))
+		{
+			JBarrierThreshold_.add_multimaterial(index, params, "", root_path);
+		}
+		else
+		{
+			json params_with_default = params;
+			params_with_default["JBarrierThreshold"] = 0.5;
+			JBarrierThreshold_.add_multimaterial(index, params_with_default, "", root_path);
+		}
 	}
 
-	Eigen::MatrixXd ModifiedNeoHookeanElasticity::assemble_hessian(const NonLinearAssemblerData &data) const
+	Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 3, 1>
+	InversionBarrier::compute_rhs(const AutodiffHessianPt &pt) const
 	{
-		return NeoHookeanElasticity::assemble_hessian(data) + barrier_hessian(data);
+		assert(pt.size() == size());
+		Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 3, 1> res;
+		assert(false);
+
+		return res;
 	}
 
-	double ModifiedNeoHookeanElasticity::barrier_energy(const NonLinearAssemblerData &data) const
+	void InversionBarrier::assign_stress_tensor(
+		const OutputData &data,
+		const int all_size,
+		const ElasticityTensorType &type,
+		Eigen::MatrixXd &all,
+		const std::function<Eigen::MatrixXd(const Eigen::MatrixXd &)> &fun) const
+	{
+		const auto &displacement = data.fun;
+		const auto &local_pts = data.local_pts;
+		const auto &bs = data.bs;
+		const auto &gbs = data.gbs;
+		const auto el_id = data.el_id;
+		const auto t = data.t;
+
+		Eigen::MatrixXd displacement_grad(size(), size());
+
+		assert(displacement.cols() == 1);
+
+		all.resize(local_pts.rows(), all_size);
+
+		ElementAssemblyValues vals;
+		vals.compute(el_id, size() == 3, local_pts, bs, gbs);
+		const auto I = Eigen::MatrixXd::Identity(size(), size());
+
+		for (long p = 0; p < local_pts.rows(); ++p)
+		{
+			compute_diplacement_grad(size(), bs, vals, local_pts, p, displacement, displacement_grad);
+
+			const Eigen::MatrixXd def_grad = I + displacement_grad;
+			if (type == ElasticityTensorType::F)
+			{
+				all.row(p) = fun(def_grad);
+				continue;
+			}
+
+			const double J = polyfem::utils::determinant(def_grad);
+			const double JBarrierThreshold = JBarrierThreshold_(local_pts.row(p), t, vals.element_id);
+
+			Eigen::MatrixXd delJ_delF, del2J_delF2;
+			jacobian_cofactor_derivatives(def_grad, size(), delJ_delF, del2J_delF2);
+
+			double lambda, mu;
+			params_.lambda_mu(local_pts.row(p), vals.val.row(p), t, vals.element_id, lambda, mu);
+
+			// PK1-like stress dW/dF; convert to the requested tensor type via def_grad.
+			Eigen::MatrixXd stress_tensor = mu * barrier<double>::first_derivatives(J, JBarrierThreshold) * delJ_delF;
+			if (type == ElasticityTensorType::CAUCHY)
+				stress_tensor = (stress_tensor * def_grad.transpose()) / J;
+			else if (type == ElasticityTensorType::PK2)
+				stress_tensor = def_grad.inverse() * stress_tensor;
+			// else: PK1, already in the right form.
+
+			all.row(p) = fun(stress_tensor);
+		}
+	}
+
+	double InversionBarrier::compute_energy(const NonLinearAssemblerData &data) const
 	{
 		const int dim = size();
 		const int n_basis = data.vals.basis_values.size();
@@ -130,16 +207,17 @@ namespace polyfem::assembler
 			const Eigen::MatrixXd def_grad = (local_disp.transpose() * grad) * jac_it + Eigen::MatrixXd::Identity(dim, dim);
 
 			const double J = use_robust_jacobian ? jacs(p) * jac_it.determinant() : def_grad.determinant();
+			const double JBarrierThreshold = JBarrierThreshold_(data.vals.quadrature.points.row(p), data.t, data.vals.element_id);
 
 			double lambda, mu;
-			lame_params().lambda_mu(data.vals.quadrature.points.row(p), data.vals.val.row(p), data.t, data.vals.element_id, lambda, mu);
+			params_.lambda_mu(data.vals.quadrature.points.row(p), data.vals.val.row(p), data.t, data.vals.element_id, lambda, mu);
 
-			energy += mu * barrier<double>::value(J) * data.da(p);
+			energy += mu * barrier<double>::value(J, JBarrierThreshold) * data.da(p);
 		}
 		return energy;
 	}
 
-	Eigen::VectorXd ModifiedNeoHookeanElasticity::barrier_gradient(const NonLinearAssemblerData &data) const
+	Eigen::VectorXd InversionBarrier::assemble_gradient(const NonLinearAssemblerData &data) const
 	{
 		const int dim = size();
 		const int n_basis = data.vals.basis_values.size();
@@ -170,14 +248,15 @@ namespace polyfem::assembler
 			const Eigen::MatrixXd def_grad = local_disp.transpose() * delF_delU + Eigen::MatrixXd::Identity(dim, dim);
 
 			const double J = use_robust_jacobian ? jacs(p) * jac_it.determinant() : def_grad.determinant();
+			const double JBarrierThreshold = JBarrierThreshold_(data.vals.quadrature.points.row(p), data.t, data.vals.element_id);
 
 			Eigen::MatrixXd delJ_delF, del2J_delF2;
 			jacobian_cofactor_derivatives(def_grad, dim, delJ_delF, del2J_delF2);
 
 			double lambda, mu;
-			lame_params().lambda_mu(data.vals.quadrature.points.row(p), data.vals.val.row(p), data.t, data.vals.element_id, lambda, mu);
+			params_.lambda_mu(data.vals.quadrature.points.row(p), data.vals.val.row(p), data.t, data.vals.element_id, lambda, mu);
 
-			const Eigen::MatrixXd gradient_temp = mu * barrier<double>::first_derivatives(J) * delJ_delF;
+			const Eigen::MatrixXd gradient_temp = mu * barrier<double>::first_derivatives(J, JBarrierThreshold) * delJ_delF;
 			const Eigen::MatrixXd gradient = delF_delU * gradient_temp.transpose();
 
 			G.noalias() += gradient * data.da(p);
@@ -187,7 +266,7 @@ namespace polyfem::assembler
 		return Eigen::Map<const Eigen::VectorXd>(G_T.data(), G_T.size());
 	}
 
-	Eigen::MatrixXd ModifiedNeoHookeanElasticity::barrier_hessian(const NonLinearAssemblerData &data) const
+	Eigen::MatrixXd InversionBarrier::assemble_hessian(const NonLinearAssemblerData &data) const
 	{
 		const int dim = size();
 		const int n_basis = data.vals.basis_values.size();
@@ -219,17 +298,18 @@ namespace polyfem::assembler
 			const Eigen::MatrixXd def_grad = local_disp.transpose() * delF_delU + Eigen::MatrixXd::Identity(dim, dim);
 
 			const double J = use_robust_jacobian ? jacs(p) * jac_it.determinant() : def_grad.determinant();
+			const double JBarrierThreshold = JBarrierThreshold_(data.vals.quadrature.points.row(p), data.t, data.vals.element_id);
 
 			Eigen::MatrixXd delJ_delF, del2J_delF2;
 			jacobian_cofactor_derivatives(def_grad, dim, delJ_delF, del2J_delF2);
 
 			double lambda, mu;
-			lame_params().lambda_mu(data.vals.quadrature.points.row(p), data.vals.val.row(p), data.t, data.vals.element_id, lambda, mu);
+			params_.lambda_mu(data.vals.quadrature.points.row(p), data.vals.val.row(p), data.t, data.vals.element_id, lambda, mu);
 
 			const Eigen::Map<const Eigen::VectorXd> g_j(delJ_delF.data(), delJ_delF.size());
 
-			const Eigen::MatrixXd hessian_temp = mu * barrier<double>::first_derivatives(J) * del2J_delF2
-												 + mu * barrier<double>::second_derivatives(J) * (g_j * g_j.transpose());
+			const Eigen::MatrixXd hessian_temp = mu * barrier<double>::first_derivatives(J, JBarrierThreshold) * del2J_delF2
+												 + mu * barrier<double>::second_derivatives(J, JBarrierThreshold) * (g_j * g_j.transpose());
 
 			Eigen::MatrixXd delF_delU_tensor = Eigen::MatrixXd::Zero(dim * dim, N);
 			for (int i = 0; i < n_basis; ++i)
@@ -245,5 +325,24 @@ namespace polyfem::assembler
 			H += (delF_delU_tensor.transpose() * hessian_temp * delF_delU_tensor) * data.da(p);
 		}
 		return H;
+	}
+
+	std::map<std::string, Assembler::ParamFunc> InversionBarrier::parameters() const
+	{
+		std::map<std::string, ParamFunc> res;
+		const auto &params = params_;
+		const auto &JBarrierThreshold = JBarrierThreshold_;
+
+		res["mu"] = [&params](const RowVectorNd &uv, const RowVectorNd &p, double t, int e) {
+			double lambda, mu;
+			params.lambda_mu(uv, p, t, e, lambda, mu);
+			return mu;
+		};
+
+		res["JBarrierThreshold"] = [&JBarrierThreshold](const RowVectorNd &uv, const RowVectorNd &p, double t, int e) {
+			return JBarrierThreshold(p, t, e);
+		};
+
+		return res;
 	}
 } // namespace polyfem::assembler

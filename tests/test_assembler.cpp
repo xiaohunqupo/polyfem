@@ -5,7 +5,8 @@
 #include <polyfem/assembler/AssemblyValsCache.hpp>
 #include <polyfem/assembler/NeoHookeanElasticity.hpp>
 #include <polyfem/assembler/NeoHookeanElasticityAutodiff.hpp>
-#include <polyfem/assembler/ModifiedNeoHookeanElasticity.hpp>
+#include <polyfem/assembler/InversionBarrier.hpp>
+#include <polyfem/assembler/SumModel.hpp>
 #include <polyfem/utils/RefElementSampler.hpp>
 #include <polyfem/varforms/VarForm.hpp>
 
@@ -339,16 +340,26 @@ namespace
 		return state;
 	}
 
-	// Set up a ModifiedNeoHookeanElasticity with E=1e5, nu=0.3.
-	ModifiedNeoHookeanElasticity make_modified_assembler(const Units &units, const std::string &root_path)
+	// Set up a SumModel combining NeoHookean and InversionBarrier, both with E=1e5, nu=0.3.
+	// This is the composable replacement for the old ModifiedNeoHookeanElasticity.
+	std::shared_ptr<SumModel> make_modified_assembler(const Units &units, const std::string &root_path)
 	{
-		ModifiedNeoHookeanElasticity a;
-		a.set_size(2);
+		auto a = std::make_shared<SumModel>();
+		a->set_size(2);
 		json mat;
-		mat["type"] = "ModifiedNeoHookean";
-		mat["E"] = 1e5;
-		mat["nu"] = 0.3;
-		a.add_multimaterial(0, mat, units, root_path);
+		mat["type"] = "MaterialSum";
+		mat["models"] = json::array();
+		json neo_mat;
+		neo_mat["type"] = "NeoHookean";
+		neo_mat["E"] = 1e5;
+		neo_mat["nu"] = 0.3;
+		mat["models"].push_back(neo_mat);
+		json barrier_mat;
+		barrier_mat["type"] = "InversionBarrier";
+		barrier_mat["E"] = 1e5;
+		barrier_mat["nu"] = 0.3;
+		mat["models"].push_back(barrier_mat);
+		a->add_multimaterial(0, mat, units, root_path);
 		return a;
 	}
 } // namespace
@@ -379,7 +390,7 @@ TEST_CASE("modified-neohookean-gradient", "[assembler]")
 		x0.setRandom();
 		x0 /= 20.0; // keep J > 0 in all trials
 
-		const Eigen::VectorXd grad = assembler.assemble_gradient(NonLinearAssemblerData(vals, 0, 0, x0, x0, da));
+		const Eigen::VectorXd grad = assembler->assemble_gradient(NonLinearAssemblerData(vals, 0, 0, x0, x0, da));
 
 		for (int i = 0; i < n_local; ++i)
 		{
@@ -390,8 +401,8 @@ TEST_CASE("modified-neohookean-gradient", "[assembler]")
 				Eigen::MatrixXd xp = x0, xm = x0;
 				xp(g * dim + d) += eps;
 				xm(g * dim + d) -= eps;
-				const double ep = assembler.compute_energy(NonLinearAssemblerData(vals, 0, 0, xp, xp, da));
-				const double em = assembler.compute_energy(NonLinearAssemblerData(vals, 0, 0, xm, xm, da));
+				const double ep = assembler->compute_energy(NonLinearAssemblerData(vals, 0, 0, xp, xp, da));
+				const double em = assembler->compute_energy(NonLinearAssemblerData(vals, 0, 0, xm, xm, da));
 				REQUIRE(grad(i * dim + d) == Catch::Approx((ep - em) / (2.0 * eps)).margin(1e-5));
 			}
 		}
@@ -423,7 +434,7 @@ TEST_CASE("modified-neohookean-hessian", "[assembler]")
 		x0.setRandom();
 		x0 /= 20.0;
 
-		const Eigen::MatrixXd hess = assembler.assemble_hessian(NonLinearAssemblerData(vals, 0, 0, x0, x0, da));
+		const Eigen::MatrixXd hess = assembler->assemble_hessian(NonLinearAssemblerData(vals, 0, 0, x0, x0, da));
 
 		for (int i = 0; i < n_local; ++i)
 		{
@@ -433,8 +444,8 @@ TEST_CASE("modified-neohookean-hessian", "[assembler]")
 				Eigen::MatrixXd xp = x0, xm = x0;
 				xp(g * dim + di) += eps;
 				xm(g * dim + di) -= eps;
-				const Eigen::VectorXd gp = assembler.assemble_gradient(NonLinearAssemblerData(vals, 0, 0, xp, xp, da));
-				const Eigen::VectorXd gm = assembler.assemble_gradient(NonLinearAssemblerData(vals, 0, 0, xm, xm, da));
+				const Eigen::VectorXd gp = assembler->assemble_gradient(NonLinearAssemblerData(vals, 0, 0, xp, xp, da));
+				const Eigen::VectorXd gm = assembler->assemble_gradient(NonLinearAssemblerData(vals, 0, 0, xm, xm, da));
 				const Eigen::VectorXd fd_col = (gp - gm) / (2.0 * eps);
 
 				for (int j = 0; j < n_local; ++j)
@@ -474,9 +485,9 @@ TEST_CASE("modified-neohookean-barrier-zero", "[assembler]")
 	const Eigen::MatrixXd x_zero = Eigen::MatrixXd::Zero(debug.n_bases * 2, 1);
 	const NonLinearAssemblerData data(vals, 0, 0, x_zero, x_zero, da);
 
-	REQUIRE(modified.compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-14));
+	REQUIRE(modified->compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-14));
 
-	const Eigen::VectorXd g_mod = modified.assemble_gradient(data);
+	const Eigen::VectorXd g_mod = modified->assemble_gradient(data);
 	const Eigen::VectorXd g_neo = neo.assemble_gradient(data);
 	for (int i = 0; i < g_mod.size(); ++i)
 		REQUIRE(g_mod(i) == Catch::Approx(g_neo(i)).margin(1e-14));
@@ -511,15 +522,11 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 	Units units;
 	units.init(state.args["units"]);
 
-	ModifiedNeoHookeanElasticity modified;
-	modified.set_size(2);
+	auto modified = make_modified_assembler(units, debug.root_path);
 	NeoHookeanElasticity neo;
 	neo.set_size(2);
 	json mat;
-	mat["type"] = "NeoHookean";
-	mat["E"] = 1e5;
-	mat["nu"] = 0.3;
-	modified.add_multimaterial(0, mat, units, debug.root_path);
+	mat["type"] = "NeoHookean"; mat["E"] = 1e5; mat["nu"] = 0.3;
 	neo.add_multimaterial(0, mat, units, debug.root_path);
 
 	const auto &bs = (*debug.bases)[0];
@@ -543,21 +550,21 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 	{
 		const auto x = make_x(1.0);
 		const NonLinearAssemblerData data(vals, 0, 0, x, x, da);
-		REQUIRE(modified.compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-14));
+		REQUIRE(modified->compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-14));
 	}
 
 	// s=0.9: J=0.81 > 0.5, barrier inactive, energies equal.
 	{
 		const auto x = make_x(0.9);
 		const NonLinearAssemblerData data(vals, 0, 0, x, x, da);
-		REQUIRE(modified.compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-10));
+		REQUIRE(modified->compute_energy(data) == Catch::Approx(neo.compute_energy(data)).margin(1e-10));
 	}
 
 	// s=0.6: J=0.36 < 0.5, barrier active, e_mod > e_neo.
 	{
 		const auto x = make_x(0.6);
 		const NonLinearAssemblerData data(vals, 0, 0, x, x, da);
-		REQUIRE(std::isfinite(modified.compute_energy(data)));
-		REQUIRE(modified.compute_energy(data) > neo.compute_energy(data));
+		REQUIRE(std::isfinite(modified->compute_energy(data)));
+		REQUIRE(modified->compute_energy(data) > neo.compute_energy(data));
 	}
 }

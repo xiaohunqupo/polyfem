@@ -17,7 +17,7 @@
 #include <polyfem/assembler/MultiModel.hpp>
 #include <polyfem/assembler/NavierStokes.hpp>
 #include <polyfem/assembler/NeoHookeanElasticity.hpp>
-#include <polyfem/assembler/ModifiedNeoHookeanElasticity.hpp>
+#include <polyfem/assembler/InversionBarrier.hpp>
 #include <polyfem/assembler/IsochoricNeoHookean.hpp>
 #include <polyfem/assembler/HGOFiber.hpp>
 #include <polyfem/assembler/ActiveFiber.hpp>
@@ -80,8 +80,6 @@ namespace polyfem
 				return std::make_shared<SaintVenantElasticity>();
 			else if (formulation == "NeoHookean")
 				return std::make_shared<NeoHookeanElasticity>();
-			else if (formulation == "ModifiedNeoHookean")
-				return std::make_shared<ModifiedNeoHookeanElasticity>();
 			else if (formulation == "IsochoricNeoHookean")
 				return std::make_shared<IsochoricNeoHookean>();
 			else if (formulation == "MooneyRivlin")
@@ -100,6 +98,8 @@ namespace polyfem
 				return std::make_shared<IncompressibleOgdenElasticity>();
 			else if (formulation == "VolumePenalty")
 				return std::make_shared<VolumePenalty>();
+			else if (formulation == "InversionBarrier")
+				return std::make_shared<InversionBarrier>();
 
 			else if (formulation == "HGOFiber")
 				return std::make_shared<HGOFiber>();
@@ -254,7 +254,6 @@ namespace polyfem
 				"HookeLinearElasticity",
 				"SaintVenant",
 				"NeoHookean",
-				"ModifiedNeoHookean",
 				"MooneyRivlin",
 				"MooneyRivlin3Param",
 				"UnconstrainedOgden",
