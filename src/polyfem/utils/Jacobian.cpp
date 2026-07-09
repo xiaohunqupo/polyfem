@@ -135,8 +135,12 @@ namespace polyfem::utils
 		const int n_elem = static_cast<int>(bases.size());
 
 		auto run_solve = [&](auto problem, int e) {
+			Parameters params;
+			params.constraintEpsilon = {0.0};
+			params.maxIter = max_iter;
+			params.findOne = true;
 			Info info;
-			auto sols = solve(std::move(problem), {0.0}, max_iter, true, 0., &info);
+			auto sols = solve(std::move(problem), params, &info);
 			if (!info.success())
 				logger().warn("Jacobian solve gave up at element {} after {} iterations", e, info.numIterations);
 			return !sols.empty();
@@ -210,8 +214,12 @@ namespace polyfem::utils
 		const int n_elem = static_cast<int>(bases.size());
 
 		auto run_solve = [threshold, max_iter](auto problem, int e) {
+			Parameters params;
+			params.constraintEpsilon = {threshold};
+			params.maxIter = max_iter;
+			params.findOne = true;
 			Info info;
-			auto sols = solve(std::move(problem), {threshold}, max_iter, true, 0., &info);
+			auto sols = solve(std::move(problem), params, &info);
 			if (!info.success())
 			{
 				logger().warn("Jacobian solve gave up at element {} after {} iterations", e, info.numIterations);
@@ -310,8 +318,14 @@ namespace polyfem::utils
 			for (int e = 0; e < n_elem; ++e)
 				problems.push_back(factory(e * n_per));
 
+			Parameters params;
+			params.targetPrecision = precision;
+			params.constraintEpsilon = {threshold};
+			params.maxIter = max_iter;
+			params.requiredMinimum = 0.;
+			params.minBoxWidth = 0.;
 			Info info;
-			auto result = batch_minimize(std::move(problems), precision, {threshold}, max_iter, 0., 0., &info);
+			auto result = batch_minimize(std::move(problems), params, &info);
 			const double t_lo = lower(result);
 			if (!info.success())
 			{
