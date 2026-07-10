@@ -526,7 +526,9 @@ TEST_CASE("modified-neohookean-barrier-active", "[assembler]")
 	NeoHookeanElasticity neo;
 	neo.set_size(2);
 	json mat;
-	mat["type"] = "NeoHookean"; mat["E"] = 1e5; mat["nu"] = 0.3;
+	mat["type"] = "NeoHookean";
+	mat["E"] = 1e5;
+	mat["nu"] = 0.3;
 	neo.add_multimaterial(0, mat, units, debug.root_path);
 
 	const auto &bs = (*debug.bases)[0];
