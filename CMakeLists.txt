@@ -108,9 +108,9 @@ endif()
 
 # Set default minimum C++ standard
 if(POLYFEM_TOPLEVEL_PROJECT)
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CXX_EXTENSIONS OFF)
+    set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to use" FORCE)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "Require the selected C++ standard" FORCE)
+    set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "Disable compiler-specific C++ extensions" FORCE)
 endif()
 
 ### Configuration
@@ -204,12 +204,6 @@ endif()
 # Required libraries
 ################################################################################
 
-if(WIN32)
-    # Eigen
-    include(eigen)
-    target_link_libraries(polyfem PUBLIC Eigen3::Eigen)
-endif()
-
 # polysolve
 include(polysolve)
 target_link_libraries(polyfem PUBLIC polysolve::polysolve)
@@ -218,11 +212,6 @@ target_link_libraries(polyfem PUBLIC polysolve::polysolve)
 include(libigl)
 target_link_libraries(polyfem PUBLIC igl::core igl::predicates)
 
-if(NOT WIN32)
-    # Eigen
-    include(eigen)
-    target_link_libraries(polyfem PUBLIC Eigen3::Eigen)
-endif()
 
 # IPC Toolkit
 include(ipc_toolkit)
