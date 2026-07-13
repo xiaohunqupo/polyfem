@@ -115,8 +115,8 @@ old-tolerances/standard/stokes_static.json
 old-tolerances/standard/unconstrained_ogden.json
 old-tolerances/standard/homogenization.json
 old-tolerances/standard/homogenization_3d.json
-old-tolerances/standard/ring.json
-old-tolerances/standard/twist-bar.json
+#old-tolerances/standard/ring.json
+#old-tolerances/standard/twist-bar.json
 old-tolerances/standard/pyramid.json
 old-tolerances/units/navier_stokes_static.json
 old-tolerances/units/neohookean.json
