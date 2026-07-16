@@ -1099,7 +1099,7 @@ namespace polyfem::varform
 		const json al_nonlinear_params = residual_solver_params(args["solver"]["augmented_lagrangian"]["nonlinear"]);
 		std::shared_ptr<polysolve::nonlinear::Solver> nl_solver =
 			polysolve::nonlinear::Solver::create(
-			nonlinear_params, args["solver"]["linear"], units.characteristic_length(), logger());
+				nonlinear_params, args["solver"]["linear"], units.characteristic_length(), logger());
 
 		solver::ALSolver al_solver(
 			al_forms_, args["solver"]["augmented_lagrangian"]["initial_weight"],

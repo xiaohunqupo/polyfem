@@ -113,7 +113,7 @@ TEST_CASE("first-order inertia updates its lifted predictor", "[form][navier_sto
 	const StiffnessMatrix mass = identity_matrix(2);
 	solver::InertiaForm inertia(mass, integrator);
 	inertia.set_x_tilde_updater([](
-		const double t, const Eigen::VectorXd &, Eigen::VectorXd &target) {
+									const double t, const Eigen::VectorXd &, Eigen::VectorXd &target) {
 		target(0) = t;
 	});
 	inertia.update_quantities(3, Eigen::Vector2d::Zero());
